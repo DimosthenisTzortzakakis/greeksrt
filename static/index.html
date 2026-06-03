@@ -1,0 +1,2827 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek SRT Generator</title>
+<style>
+:root {
+  --bg: #0c0d14;
+  --surface: #13141f;
+  --surface2: #1c1e2e;
+  --border: #272a40;
+  --focus: #5b52f0;
+  --accent: #6259f5;
+  --accent2: #7068f7;
+  --text: #e2e4f0;
+  --muted: #7880a4;
+  --success: #3dd68c;
+  --error: #f07070;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 2rem 1rem 6rem;
+}
+.wrap { max-width: 700px; margin: 0 auto; }
+
+h1 {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  background: linear-gradient(130deg, #9b94ff, #6259f5, #b09aff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+.tagline { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 1.75rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px;
+  margin-bottom: 10px;
+}
+.card-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+input[type=text], input[type=password] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+input:focus { border-color: var(--focus); }
+#vocabHint:focus { border-color: var(--focus); }
+
+.row2 { display: flex; gap: 8px; }
+.row2 input { flex: 1; }
+.icon-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 0 13px;
+  transition: color .15s, border-color .15s;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--focus); }
+.hint { font-size: 12px; color: var(--muted); margin-top: 7px; }
+.hint a { color: var(--accent); text-decoration: none; }
+.hint a:hover { text-decoration: underline; }
+
+/* Provider tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 6px;
+  text-align: center;
+  transition: all .15s;
+}
+.tab.on { background: rgba(98,89,245,.12); border-color: var(--accent); color: var(--accent); }
+
+/* Upload */
+.drop {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: var(--r);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: rgba(98,89,245,.04); }
+.drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-icon { font-size: 2rem; margin-bottom: 8px; }
+.drop-label { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+.drop-hint { font-size: 12px; color: var(--muted); }
+
+.file-pill { display: none; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; margin-top: 10px; }
+.file-pill.show { display: flex; }
+.fp-name { flex: 1; font-size: 13px; font-weight: 500; word-break: break-all; }
+.fp-size { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.fp-rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; transition: color .15s; }
+.fp-rm:hover { color: var(--error); }
+
+/* Settings */
+.sg { display: grid; gap: 16px; }
+.srow { display: flex; flex-direction: column; gap: 6px; }
+.slabel { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; }
+.sval { color: var(--accent); font-weight: 700; }
+.sdesc { font-size: 12px; color: var(--muted); }
+input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+.lang-tabs { display: flex; gap: 8px; }
+.lang-tab { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; padding: 7px; text-align: center; transition: all .15s; }
+.lang-tab.on { background: rgba(98,89,245,.12); border-color: var(--accent); color: var(--accent); }
+
+/* Checkboxes */
+.checks { display: grid; gap: 10px; }
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.check-row input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.check-label { font-size: 13px; }
+.check-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Radio options */
+.radio-opts { display: flex; gap: 8px; }
+.radio-opt {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.radio-opt input[type=radio] { accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+.radio-opt.selected { border-color: var(--accent); background: rgba(98,89,245,.08); }
+.radio-opt-label { font-size: 13px; font-weight: 600; }
+.radio-opt-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Toggle */
+.toggle-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.toggle-info { flex: 1; }
+.toggle-info .slabel { display: block; margin-bottom: 3px; }
+.tgl { position: relative; width: 44px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+.tgl input { opacity: 0; width: 0; height: 0; }
+.tgl-track { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: background .2s; }
+.tgl-track::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; }
+.tgl input:checked + .tgl-track { background: var(--accent); }
+.tgl input:checked + .tgl-track::before { transform: translateX(20px); }
+
+/* Generate */
+.gen-btn {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r);
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  margin-top: 4px;
+}
+.gen-btn:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(98,89,245,.35); }
+.gen-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.err-box { display: none; background: rgba(240,112,112,.08); border: 1px solid var(--error); border-radius: 8px; color: var(--error); font-size: 13px; padding: 10px 14px; margin-top: 10px; white-space: pre-wrap; }
+.err-box.show { display: block; }
+
+/* Progress */
+.progress-card { display: none; text-align: center; padding: 28px 20px; }
+.progress-card.show { display: block; }
+.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-msg { color: var(--muted); font-size: 13px; }
+.progress-sub { margin-top: 6px; font-size: 12px; color: #44476a; }
+
+/* ── Audio Player ── */
+.player-bar {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.play-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.play-btn:hover { background: var(--accent2); }
+.player-time { font-size: 12px; font-family: monospace; color: var(--muted); white-space: nowrap; min-width: 90px; }
+.player-progress-wrap {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+.player-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  width: 0%;
+  transition: width .1s linear;
+  pointer-events: none;
+}
+.player-hint { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ── Editor ── */
+.editor-wrap { display: none; }
+.editor-wrap.show { display: block; }
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+.editor-stats { font-size: 12px; color: var(--muted); }
+.editor-actions { display: flex; gap: 8px; }
+
+.dl-btn { background: var(--success); border: none; border-radius: 8px; color: #051a0e; cursor: pointer; font-size: 13px; font-weight: 700; padding: 8px 18px; transition: filter .15s; }
+.dl-btn:hover { filter: brightness(1.1); }
+
+.retry-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; padding: 8px 14px; transition: all .15s; }
+.retry-btn:hover { border-color: var(--accent); color: var(--text); }
+
+/* Subtitle cards */
+.sub-list { display: flex; flex-direction: column; }
+
+.sub-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  margin-bottom: 2px;
+  transition: border-color .15s, background .15s;
+  scroll-margin-top: 120px;
+}
+.sub-card:focus-within { border-color: var(--focus); }
+.sub-card.playing {
+  border-color: var(--accent);
+  background: rgba(98,89,245,.08);
+}
+
+.sub-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.sub-num { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 22px; }
+.sub-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+  flex: 1;
+}
+/* Seek button — only visible on card hover */
+.sub-seek {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .15s, color .15s, background .15s;
+  white-space: nowrap;
+}
+.sub-card:hover .sub-seek { opacity: 1; }
+.sub-seek:hover { color: var(--accent); background: rgba(98,89,245,.1); }
+.sub-speaker {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(98,89,245,.15);
+  color: var(--accent);
+}
+/* Different speaker colors */
+.spk-0 { background: rgba(98,89,245,.15); color: #9b93ff; }
+.spk-1 { background: rgba(61,214,140,.12); color: #3dd68c; }
+.spk-2 { background: rgba(240,112,112,.12); color: #f07070; }
+.spk-3 { background: rgba(251,191,36,.12); color: #fbbf24; }
+.spk-4 { background: rgba(96,165,250,.12); color: #60a5fa; }
+
+.sub-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 4px; transition: all .15s; }
+.sub-del:hover { background: rgba(240,112,112,.12); color: var(--error); }
+
+.sub-text {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.55;
+  min-height: 36px;
+  padding: 6px 10px;
+  resize: none;
+  outline: none;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.sub-text:focus { border-color: var(--focus); }
+
+.sub-gap { display: flex; align-items: center; gap: 8px; padding: 2px 4px; opacity: 0; transition: opacity .15s; }
+.sub-gap:hover { opacity: 1; }
+.sub-gap-line { flex: 1; height: 1px; background: var(--border); }
+.merge-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 600; padding: 3px 10px; transition: all .15s; white-space: nowrap; }
+.merge-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(98,89,245,.08); }
+
+/* Sticky bar */
+.sticky-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 20px; z-index: 100; }
+.sticky-bar.show { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sticky-info { font-size: 12px; color: var(--muted); }
+.sticky-dl { background: var(--success); border: none; border-radius: 8px; color: #051a0e; cursor: pointer; font-size: 14px; font-weight: 700; padding: 10px 28px; transition: filter .15s; }
+.sticky-dl:hover { filter: brightness(1.1); }
+
+/* ── Animated Export Card ─────────────────────────────────────────────────── */
+#animExportCard { display: none; }
+#animExportCard.show { display: block; }
+
+.anim-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.anim-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.anim-tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.anim-tab:hover:not(.on) { color: var(--text); }
+
+.anim-panel { display: none; }
+.anim-panel.on { display: block; }
+
+/* Control groups within panels */
+.ac-group { display: flex; flex-direction: column; gap: 14px; }
+.ac-row { display: flex; flex-direction: column; gap: 5px; }
+.ac-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+.ac-val { color: var(--accent); font-weight: 700; font-size: 12px; }
+.ac-desc { font-size: 11px; color: var(--muted); }
+
+/* Pill buttons (animation picker) */
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 13px;
+  transition: all .15s;
+}
+.pill-btn.on { background: rgba(98,89,245,.15); border-color: var(--accent); color: var(--accent); }
+.pill-btn:hover:not(.on) { border-color: var(--text); color: var(--text); }
+
+/* Two-column color+slider row */
+.ac-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ac-inline { display: flex; align-items: center; gap: 8px; }
+.ac-inline input[type=color] { width: 32px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); cursor: pointer; padding: 2px; }
+
+/* Toggle row within anim card */
+.ac-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ac-toggle-label { font-size: 13px; font-weight: 500; }
+
+/* Align radio */
+.align-row { display: flex; gap: 8px; }
+.align-btn {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px;
+  text-align: center;
+  transition: all .15s;
+}
+.align-btn.on { background: rgba(98,89,245,.12); border-color: var(--accent); color: var(--accent); }
+
+/* Font family row */
+.ac-font-row { display: flex; gap: 8px; align-items: center; }
+.ac-select {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.ac-select:focus { border-color: var(--focus); }
+.ac-load-fonts {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 11px;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.ac-load-fonts:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Bold/Italic toggles in style tab */
+.bi-row { display: flex; gap: 8px; }
+.bi-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 16px;
+  transition: all .15s;
+}
+.bi-btn.on { background: rgba(98,89,245,.15); border-color: var(--accent); color: var(--accent); }
+
+/* Export tab */
+.export-info {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 14px;
+  letter-spacing: .03em;
+}
+.export-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.export-btn {
+  flex: 1;
+  min-width: 120px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 10px;
+  text-align: center;
+  transition: all .15s;
+}
+.export-btn:hover { border-color: var(--accent); background: rgba(98,89,245,.1); }
+.export-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.export-btn.primary:hover { background: var(--accent2); }
+.export-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.webm-progress { display: none; margin-top: 14px; }
+.webm-progress.show { display: block; }
+.webm-progress-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.webm-progress-bar { height: 100%; background: var(--accent); border-radius: 6px; width: 0%; transition: width .1s; }
+.webm-progress-label { font-size: 12px; color: var(--muted); text-align: center; }
+
+/* Dividers in panel */
+.ac-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Emphasis info box */
+.emph-info {
+  background: rgba(98,89,245,.08);
+  border: 1px solid rgba(98,89,245,.25);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+.emph-info kbd {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+/* ── Preview Modal ────────────────────────────────────────────────────────── */
+#previewModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.92);
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+#previewModal.show { display: flex; }
+
+#previewCanvas {
+  max-width: 100vw;
+  max-height: calc(100vh - 100px);
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  background: transparent;
+  /* Checkerboard to visualize transparency */
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 18px;
+}
+.preview-play-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.preview-play-btn:hover { background: var(--accent2); }
+.preview-time { font-size: 12px; font-family: monospace; color: var(--muted); min-width: 90px; }
+.preview-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 16px;
+  transition: all .15s;
+}
+.preview-close:hover { border-color: var(--error); color: var(--error); }
+.preview-bg-toggle {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 12px;
+  transition: all .15s;
+}
+.preview-bg-toggle:hover { border-color: var(--accent); color: var(--accent); }
+#previewCanvasWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#previewCanvasWrap.dark-bg { background: #111; border-radius: 8px; }
+#previewCanvasWrap.light-bg { background: #ddd; border-radius: 8px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=GFS+Neohellenic:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;700&family=Montserrat:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Ubuntu:ital,wght@0,400;0,700;1,400&family=Raleway:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=Exo+2:ital,wght@0,400;0,700;1,400&subset=greek&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+<h1>Greek SRT Generator</h1>
+<p class="tagline">Transcribe · Edit · Sync · Download</p>
+
+<!-- Provider & Key -->
+<div class="card">
+  <div class="card-title">Transcription Model</div>
+  <div class="tabs" id="providerTabs">
+    <button class="tab on" data-p="elevenlabs">ElevenLabs Scribe<br><span style="font-size:10px;font-weight:400">Best quality · Speaker detection</span></button>
+    <button class="tab" data-p="groq">Groq Whisper<br><span style="font-size:10px;font-weight:400">Free · Fast</span></button>
+    <button class="tab" data-p="openai">OpenAI Whisper<br><span style="font-size:10px;font-weight:400">Reliable · Paid</span></button>
+  </div>
+  <div class="row2">
+    <input type="password" id="apiKey" placeholder="API key…" autocomplete="off" spellcheck="false">
+    <button class="icon-btn" id="peekBtn">👁</button>
+  </div>
+  <p class="hint" id="keyHint">ElevenLabs free key → <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io</a> · Best Greek + speaker detection.</p>
+</div>
+
+<!-- Upload -->
+<div class="card">
+  <div class="card-title">Audio File</div>
+  <div class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".mp3,.mp4,.wav,.m4a,.ogg,.flac,.webm,.mpeg">
+    <div class="drop-icon">🎙</div>
+    <div class="drop-label">Drop audio here or click to browse</div>
+    <div class="drop-hint">MP3 · WAV · M4A · MP4 · OGG · FLAC · Max 25 MB</div>
+  </div>
+  <div class="file-pill" id="filePill">
+    <span>🎵</span>
+    <span class="fp-name" id="fpName"></span>
+    <span class="fp-size" id="fpSize"></span>
+    <button class="fp-rm" id="fpRm">✕</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="card">
+  <div class="card-title">Settings</div>
+  <div class="sg">
+
+    <div class="srow">
+      <div class="slabel">Language</div>
+      <div class="lang-tabs">
+        <button class="lang-tab on" data-lang="el">🇬🇷 Greek</button>
+        <button class="lang-tab" data-lang="en">🇬🇧 English</button>
+        <button class="lang-tab" data-lang="auto">🌐 Auto</button>
+      </div>
+    </div>
+
+    <div class="srow">
+      <div class="slabel"><span>Max characters per line</span><span class="sval" id="charsVal">30</span></div>
+      <input type="range" id="charsSlider" min="1" max="150" value="30" step="1">
+      <div class="sdesc">Only splits long sentences further at a grammatically clean point</div>
+    </div>
+
+    <div class="srow">
+      <div class="slabel"><span>Silence gap → new subtitle</span><span class="sval" id="silenceVal">0.5 s</span></div>
+      <input type="range" id="silenceSlider" min="0.2" max="2.0" value="0.5" step="0.1">
+      <div class="sdesc">Pauses longer than this always start a new subtitle card</div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="slabel">Keep subtitles connected</div>
+        <div class="sdesc">No blank screen between subtitles (unless long pause)</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="keepConn" checked><span class="tgl-track"></span></label>
+    </div>
+
+    <div class="srow">
+      <div class="slabel">Vocabulary hints <span style="color:var(--muted);font-size:11px;font-weight:400">(optional)</span></div>
+      <textarea id="vocabHint" rows="2" placeholder="Names, places, or words specific to your audio — e.g. Νίκος, Θεσσαλονίκη, τεχνητή νοημοσύνη" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;resize:vertical;line-height:1.5;font-family:inherit;transition:border-color .15s"></textarea>
+      <div class="sdesc">Helps Whisper recognise unusual words correctly (Groq &amp; OpenAI only)</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Text processing -->
+<div class="card">
+  <div class="card-title">Text Processing</div>
+  <div class="checks">
+
+    <label class="check-row">
+      <input type="checkbox" id="chkPunct" checked>
+      <div>
+        <div class="check-label">Remove . , ! &nbsp;<span style="color:var(--muted);font-size:12px">(keep ; only)</span></div>
+        <div class="check-desc">Subtitles read better without punctuation on screen</div>
+      </div>
+    </label>
+
+    <label class="check-row">
+      <input type="checkbox" id="chkNums" checked>
+      <div>
+        <div class="check-label">Replace number words with digits</div>
+        <div class="check-desc">δύο → 2 &nbsp;·&nbsp; είκοσι → 20 &nbsp;·&nbsp; two → 2 &nbsp;·&nbsp; twenty → 20</div>
+      </div>
+    </label>
+
+    <label class="check-row">
+      <input type="checkbox" id="chkSwear" checked>
+      <div>
+        <div class="check-label">Censor swear words</div>
+        <div class="check-desc">Mild: μ@λ@κ@ς &nbsp;·&nbsp; Heavy: γ#@#!$</div>
+      </div>
+    </label>
+
+    <label class="check-row">
+      <input type="checkbox" id="chkSfx" checked>
+      <div>
+        <div class="check-label">Replace sounds & noises with …</div>
+        <div class="check-desc">Fillers, laughs, [music], (noise) → …</div>
+      </div>
+    </label>
+
+    <div class="srow" style="margin-top:4px">
+      <div class="slabel" style="margin-bottom:6px">Capitalization</div>
+      <div class="radio-opts">
+        <label class="radio-opt" id="capOpt1">
+          <input type="radio" name="capMode" value="all">
+          <div>
+            <div class="radio-opt-label">All first letters</div>
+            <div class="radio-opt-desc">Each subtitle starts with a capital</div>
+          </div>
+        </label>
+        <label class="radio-opt selected" id="capOpt2">
+          <input type="radio" name="capMode" value="after_q" checked>
+          <div>
+            <div class="radio-opt-label">Only after ;</div>
+            <div class="radio-opt-desc">Lowercase everything, capital only after a question mark</div>
+          </div>
+        </label>
+        <label class="radio-opt" id="capOpt3">
+          <input type="radio" name="capMode" value="allcaps">
+          <div>
+            <div class="radio-opt-label">ALL CAPS</div>
+            <div class="radio-opt-desc">Every letter uppercase, no accent marks</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<button class="gen-btn" id="genBtn" disabled>Transcribe & Generate SRT</button>
+<div class="err-box" id="errBox"></div>
+
+<!-- Progress -->
+<div class="card progress-card" id="progressCard">
+  <div class="spinner"></div>
+  <div class="progress-msg" id="progressMsg">Transcribing…</div>
+  <div class="progress-sub">Usually 10–90 seconds depending on file length.</div>
+</div>
+
+<!-- Editor -->
+<div class="editor-wrap" id="editorWrap">
+
+  <!-- Audio player -->
+  <div class="player-bar" id="playerBar">
+    <button class="play-btn" id="playBtn" title="Play / Pause (Space)">▶</button>
+    <div class="player-time" id="playerTime">00:00 / 00:00</div>
+    <div class="player-progress-wrap" id="progressWrap">
+      <div class="player-progress-fill" id="progressFill"></div>
+    </div>
+    <div class="player-hint">Space = play/pause · click timestamp to seek</div>
+  </div>
+
+  <div class="editor-toolbar">
+    <div class="editor-stats" id="editorStats"></div>
+    <div class="editor-actions">
+      <button class="retry-btn" id="retryBtn">↺ Re-transcribe</button>
+      <button class="dl-btn" id="dlBtn">⬇ Download SRT</button>
+    </div>
+  </div>
+
+  <div class="sub-list" id="subList"></div>
+</div>
+
+<!-- Animated Export Card -->
+<div class="card" id="animExportCard">
+  <div class="card-title">🎬 Animated Export</div>
+
+  <!-- Tab bar -->
+  <div class="anim-tabs">
+    <button class="anim-tab on" data-atab="style">Style</button>
+    <button class="anim-tab" data-atab="animation">Animation</button>
+    <button class="anim-tab" data-atab="emphasis">Emphasis</button>
+    <button class="anim-tab" data-atab="export">Export</button>
+  </div>
+
+  <!-- ── Style Panel ─────────────────────────────────────────────────── -->
+  <div class="anim-panel on" id="anim-panel-style">
+    <div class="ac-group">
+
+      <!-- Font family -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Font family</span></div>
+        <div class="ac-font-row">
+          <select class="ac-select" id="ac-fontFamily">
+            <option value="Roboto">Roboto</option>
+            <option value="Open Sans">Open Sans</option>
+            <option value="Noto Sans">Noto Sans</option>
+            <option value="Noto Serif">Noto Serif</option>
+            <option value="GFS Neohellenic">GFS Neohellenic</option>
+            <option value="Oswald">Oswald</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Lato">Lato</option>
+            <option value="Ubuntu">Ubuntu</option>
+            <option value="Raleway">Raleway</option>
+            <option value="Bebas Neue">Bebas Neue</option>
+            <option value="Exo 2">Exo 2</option>
+          </select>
+          <button class="ac-load-fonts" id="ac-loadFontsBtn" title="Load fonts from your PC (Chrome only)">+ Local fonts</button>
+        </div>
+      </div>
+
+      <!-- Font size -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Font size</span><span class="ac-val" id="ac-fontSizeVal">72px</span></div>
+        <input type="range" id="ac-fontSize" min="20" max="200" value="72" step="1">
+      </div>
+
+      <!-- Text color + Bold + Italic -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Text color &amp; style</span></div>
+        <div class="ac-inline">
+          <input type="color" id="ac-textColor" value="#ffffff">
+          <div class="bi-row">
+            <button class="bi-btn on" id="ac-boldBtn" title="Bold">B</button>
+            <button class="bi-btn" id="ac-italicBtn" title="Italic"><em>I</em></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Letter spacing -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Letter spacing</span><span class="ac-val" id="ac-letterSpacingVal">0px</span></div>
+        <input type="range" id="ac-letterSpacing" min="-5" max="20" value="0" step="0.5">
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <!-- Outline -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Outline color &amp; width</span><span class="ac-val" id="ac-outlineWidthVal">4px</span></div>
+        <div class="ac-inline">
+          <input type="color" id="ac-outlineColor" value="#000000">
+          <input type="range" id="ac-outlineWidth" min="0" max="20" value="4" step="0.5" style="flex:1">
+        </div>
+      </div>
+
+      <!-- Shadow -->
+      <div class="ac-row">
+        <div class="ac-toggle-row">
+          <span class="ac-toggle-label">Drop shadow</span>
+          <label class="tgl"><input type="checkbox" id="ac-shadowOn" checked><span class="tgl-track"></span></label>
+        </div>
+        <div id="ac-shadowControls" class="ac-inline" style="margin-top:6px">
+          <input type="color" id="ac-shadowColor" value="#000000">
+          <input type="range" id="ac-shadowBlur" min="0" max="40" value="12" step="1" style="flex:1">
+          <span class="ac-val" id="ac-shadowBlurVal">12</span>
+        </div>
+      </div>
+
+      <!-- Background box -->
+      <div class="ac-row">
+        <div class="ac-toggle-row">
+          <span class="ac-toggle-label">Background box</span>
+          <label class="tgl"><input type="checkbox" id="ac-bgOn"><span class="tgl-track"></span></label>
+        </div>
+        <div id="ac-bgControls" style="display:none;margin-top:8px">
+          <div class="ac-group">
+            <div class="ac-inline">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">Color</span>
+              <input type="color" id="ac-bgColor" value="#000000">
+              <input type="range" id="ac-bgAlpha" min="0" max="100" value="45" step="1" style="flex:1">
+              <span class="ac-val" id="ac-bgAlphaVal">45%</span>
+            </div>
+            <div class="ac-inline">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">Padding</span>
+              <input type="range" id="ac-bgPad" min="0" max="60" value="16" step="1" style="flex:1">
+              <span class="ac-val" id="ac-bgPadVal">16px</span>
+            </div>
+            <div class="ac-inline">
+              <span style="font-size:12px;color:var(--muted);white-space:nowrap">Radius</span>
+              <input type="range" id="ac-bgRadius" min="0" max="40" value="8" step="1" style="flex:1">
+              <span class="ac-val" id="ac-bgRadiusVal">8px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <!-- Position Y -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Vertical position</span><span class="ac-val" id="ac-posYVal">80%</span></div>
+        <input type="range" id="ac-posY" min="0" max="100" value="80" step="1">
+        <div class="ac-desc">Distance from top of frame</div>
+      </div>
+
+      <!-- Max width -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Max width</span><span class="ac-val" id="ac-maxWidthVal">85%</span></div>
+        <input type="range" id="ac-maxWidth" min="40" max="100" value="85" step="1">
+      </div>
+
+      <!-- Text align -->
+      <div class="ac-row">
+        <div class="ac-label"><span>Text alignment</span></div>
+        <div class="align-row">
+          <button class="align-btn" data-align="left">Left</button>
+          <button class="align-btn on" data-align="center">Center</button>
+          <button class="align-btn" data-align="right">Right</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Animation Panel ─────────────────────────────────────────────── -->
+  <div class="anim-panel" id="anim-panel-animation">
+    <div class="ac-group">
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Entry animation</span></div>
+        <div class="pill-row" id="ac-entryAnim">
+          <button class="pill-btn" data-val="none">None</button>
+          <button class="pill-btn on" data-val="fade">Fade</button>
+          <button class="pill-btn" data-val="pop">Pop</button>
+          <button class="pill-btn" data-val="slideup">Slide up</button>
+          <button class="pill-btn" data-val="typewriter">Typewriter</button>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Entry duration</span><span class="ac-val" id="ac-entryDurVal">0.25s</span></div>
+        <input type="range" id="ac-entryDur" min="0" max="0.8" value="0.25" step="0.01">
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Exit animation</span></div>
+        <div class="pill-row" id="ac-exitAnim">
+          <button class="pill-btn" data-val="none">None</button>
+          <button class="pill-btn on" data-val="fade">Fade</button>
+          <button class="pill-btn" data-val="shrink">Shrink</button>
+          <button class="pill-btn" data-val="instant">Instant</button>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Exit duration</span><span class="ac-val" id="ac-exitDurVal">0.20s</span></div>
+        <input type="range" id="ac-exitDur" min="0" max="0.8" value="0.2" step="0.01">
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Animate every N subtitles</span></div>
+        <div class="ac-inline">
+          <label class="tgl"><input type="checkbox" id="ac-everyNOn"><span class="tgl-track"></span></label>
+          <span style="font-size:12px;color:var(--muted);margin:0 8px">N =</span>
+          <input type="range" id="ac-everyN" min="1" max="10" value="2" step="1" style="flex:1" disabled>
+          <span class="ac-val" id="ac-everyNVal">2</span>
+        </div>
+        <div class="ac-desc">When enabled, only every Nth subtitle gets the full animation; others appear instantly.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Emphasis Panel ──────────────────────────────────────────────── -->
+  <div class="anim-panel" id="anim-panel-emphasis">
+    <div class="ac-group">
+
+      <div class="ac-row">
+        <div class="ac-label" style="margin-bottom:6px"><span>Auto-detect emphasized words</span></div>
+        <div class="checks" style="gap:8px">
+          <label class="check-row">
+            <input type="checkbox" id="ac-emphLongest" checked>
+            <div>
+              <div class="check-label">Longest word in subtitle</div>
+            </div>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="ac-emphLast" checked>
+            <div>
+              <div class="check-label">Last word of sentence (ends with ; or .)</div>
+            </div>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="ac-emphPause">
+            <div>
+              <div class="check-label">First word after a long pause (&gt; 0.8s)</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Minimum emphasis interval</span></div>
+        <div class="pill-row" id="ac-emphInterval">
+          <button class="pill-btn on" data-val="1">Every subtitle</button>
+          <button class="pill-btn" data-val="2">Every 2nd</button>
+          <button class="pill-btn" data-val="3">Every 3rd</button>
+        </div>
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Emphasis color</span></div>
+        <div class="ac-inline">
+          <input type="color" id="ac-emphColor" value="#FFD700">
+          <span style="font-size:12px;color:var(--muted);margin-left:4px">Default: gold</span>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Emphasis scale</span><span class="ac-val" id="ac-emphScaleVal">1.25×</span></div>
+        <input type="range" id="ac-emphScale" min="1.0" max="2.0" value="1.25" step="0.05">
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-toggle-row">
+          <span class="ac-toggle-label">Emphasis bold</span>
+          <label class="tgl"><input type="checkbox" id="ac-emphBold" checked><span class="tgl-track"></span></label>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-toggle-row">
+          <span class="ac-toggle-label">Emphasis italic</span>
+          <label class="tgl"><input type="checkbox" id="ac-emphItalic"><span class="tgl-track"></span></label>
+        </div>
+      </div>
+
+      <div class="ac-row">
+        <div class="ac-label"><span>Emphasis animation</span></div>
+        <div class="pill-row" id="ac-emphAnimType">
+          <button class="pill-btn on" data-val="none">None</button>
+          <button class="pill-btn" data-val="bounce">Bounce</button>
+          <button class="pill-btn" data-val="shake">Shake</button>
+          <button class="pill-btn" data-val="glow">Glow</button>
+        </div>
+      </div>
+
+      <div class="ac-divider"></div>
+
+      <div class="emph-info">
+        <strong>Manual emphasis:</strong> In the editor, select a word and press <kbd>Ctrl+E</kbd> to wrap it in 〈angle brackets〉. Wrapped words are always emphasized regardless of auto-detect settings.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Export Panel ────────────────────────────────────────────────── -->
+  <div class="anim-panel" id="anim-panel-export">
+    <div class="ac-group">
+      <div class="export-info">1080 × 1920 · 25 fps · VP9 WebM (transparent)</div>
+      <div class="export-btns">
+        <button class="export-btn primary" id="ac-previewBtn">▶ Preview</button>
+        <button class="export-btn" id="ac-assBtn">⬇ Download ASS</button>
+        <button class="export-btn" id="ac-webmBtn">⬛ Render WebM</button>
+      </div>
+      <div class="webm-progress" id="ac-webmProgress">
+        <div class="webm-progress-bar-wrap">
+          <div class="webm-progress-bar" id="ac-webmBar"></div>
+        </div>
+        <div class="webm-progress-label" id="ac-webmLabel">Rendering… 0%</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<!-- Preview Modal (outside .wrap) -->
+<div id="previewModal">
+  <div id="previewCanvasWrap" class="dark-bg">
+    <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+  </div>
+  <div class="preview-controls">
+    <button class="preview-play-btn" id="prevPlayBtn">▶</button>
+    <div class="preview-time" id="prevTime">00:00 / 00:00</div>
+    <button class="preview-bg-toggle" id="prevBgBtn">⬜ Light BG</button>
+    <button class="preview-close" id="prevCloseBtn">✕ Close</button>
+  </div>
+</div>
+
+<!-- Sticky download -->
+<div class="sticky-bar" id="stickyBar">
+  <div class="sticky-info"><strong id="stickyStat"></strong> subtitles · Enter = split · Backspace at start = merge · Space = play/pause · Ctrl+Q = «wrap»</div>
+  <button class="sticky-dl" id="stickyDl">⬇ Download .srt</button>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let selectedFile = null;
+let selectedLang = 'el';
+let selectedProv = 'elevenlabs';
+let subtitles    = [];
+let nextId       = 1;
+let audioEl      = null;
+let rafId        = null;
+let activeCardId = null;
+// lastTyped removed — scroll lock now based on textarea focus directly
+
+const HINTS = {
+  elevenlabs: 'ElevenLabs free key → <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io</a> · Best Greek + speaker detection.',
+  groq:       'Groq free key → <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · Whisper large-v3.',
+  openai:     'OpenAI key → <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a> · Paid per minute ($0.006/min).',
+};
+
+// Speaker colors (cycle through)
+const SPK_COLORS = ['spk-0','spk-1','spk-2','spk-3','spk-4'];
+const spkMap = {};
+let spkCount = 0;
+function spkClass(id) {
+  if (!id) return '';
+  if (!(id in spkMap)) spkMap[id] = SPK_COLORS[spkCount++ % SPK_COLORS.length];
+  return spkMap[id];
+}
+function spkLabel(id) {
+  if (!id) return '';
+  const num = Object.keys(spkMap).indexOf(id);
+  return `S${num + 1}`;
+}
+
+// ── Provider tabs ─────────────────────────────────────────────────────────────
+document.querySelectorAll('#providerTabs .tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#providerTabs .tab').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    selectedProv = btn.dataset.p;
+    document.getElementById('keyHint').innerHTML = HINTS[selectedProv];
+    apiKeyEl.value = localStorage.getItem('srt_api_key_' + selectedProv) || '';
+    updateBtn();
+  });
+});
+
+// ── API Key ───────────────────────────────────────────────────────────────────
+const apiKeyEl = document.getElementById('apiKey');
+
+// Load saved key from localStorage
+const savedKey = localStorage.getItem('srt_api_key_' + selectedProv);
+if (savedKey) { apiKeyEl.value = savedKey; }
+
+document.getElementById('peekBtn').addEventListener('click', () => {
+  apiKeyEl.type = apiKeyEl.type === 'password' ? 'text' : 'password';
+});
+apiKeyEl.addEventListener('input', () => {
+  localStorage.setItem('srt_api_key_' + selectedProv, apiKeyEl.value.trim());
+  updateBtn();
+});
+
+fetch('/env-key').then(r => r.json()).then(d => {
+  if (d.elevenlabs || d.groq || d.openai) { apiKeyEl.placeholder = '(server key configured)'; updateBtn(); }
+}).catch(() => {});
+
+// ── File upload ───────────────────────────────────────────────────────────────
+const fileInput = document.getElementById('fileInput');
+const dropZone  = document.getElementById('dropZone');
+fileInput.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop',      e => { e.preventDefault(); dropZone.classList.remove('over'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+document.getElementById('fpRm').addEventListener('click', () => { selectedFile = null; fileInput.value = ''; document.getElementById('filePill').classList.remove('show'); updateBtn(); });
+
+function setFile(f) {
+  selectedFile = f;
+  document.getElementById('fpName').textContent = f.name;
+  document.getElementById('fpSize').textContent = fmtBytes(f.size);
+  document.getElementById('filePill').classList.add('show');
+  hide('errBox');
+  updateBtn();
+}
+
+// ── Language ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.lang-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    selectedLang = btn.dataset.lang;
+  });
+});
+
+// ── Sliders ───────────────────────────────────────────────────────────────────
+const charsSlider   = document.getElementById('charsSlider');
+const silenceSlider = document.getElementById('silenceSlider');
+charsSlider.addEventListener('input',   () => document.getElementById('charsVal').textContent = charsSlider.value);
+silenceSlider.addEventListener('input', () => document.getElementById('silenceVal').textContent = parseFloat(silenceSlider.value).toFixed(1) + ' s');
+
+// ── Text processing ───────────────────────────────────────────────────────────
+// ── Profanity censoring ───────────────────────────────────────────────────────
+// Roots that trigger MILD censoring (replace vowels with @)
+// Keep only clear profanity roots — no common everyday Greek words
+const MILD_ROOTS = [
+  'μαλακ','βλακ','ηλιθ','σκατ','αρχιδ','πουστ','κοπαν',
+];
+// Roots that trigger HEAVY censoring (keep first letter + symbols)
+const HEAVY_ROOTS = [
+  'γαμ','μουν','πουτσ','κωλ','πουταν','πορν',
+];
+// Prefixes that look like a profanity root but are innocent — never censor these
+const SAFE_PREFIXES = [
+  'γαμπρ','γαμηλ',   // γαμπρός (son-in-law), γαμήλιος (wedding)
+  'κωλυ','κωλοτ',    // κωλύω (to hinder), κωλότουμπα (somersault)
+  'πουστ',            // already in MILD — don't double-hit
+  'πορνε',            // πορνεία as a religious/formal term (rare in speech)
+];
+const GREEK_VOWELS_RE = /[αεηιουωάέήίόύώϊϋΐΰ]/g;
+
+function removeAccents(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function censorWord(word) {
+  if (!word || word.length < 4) return word;  // minimum 4 chars — avoids 3-letter coincidences
+  const norm = removeAccents(word.toLowerCase());
+  // Never censor words that start with a safe prefix
+  if (SAFE_PREFIXES.some(p => norm.startsWith(p))) return word;
+  for (const root of HEAVY_ROOTS) {
+    if (norm.startsWith(root)) {
+      const syms = ['#','@','!','$','%','*'];
+      return word[0] + Array.from({length: word.length - 1}, (_,i) => syms[i % syms.length]).join('');
+    }
+  }
+  for (const root of MILD_ROOTS) {
+    if (norm.startsWith(root)) {
+      return word[0] + word.slice(1).replace(GREEK_VOWELS_RE, '@');
+    }
+  }
+  return word;
+}
+
+function censorText(text) {
+  return text.replace(/\S+/g, token => {
+    // Strip surrounding punctuation before checking, re-attach after
+    const match = token.match(/^([^α-ωΑ-Ωa-zA-Z]*)([α-ωΑ-Ωa-zA-Z].*)$/u) || [null,'',token];
+    const prefix = match[1] || '';
+    const word   = match[2] || token;
+    return prefix + censorWord(word);
+  });
+}
+
+// ── Sound effects → … ─────────────────────────────────────────────────────────
+const FILLER_SOUNDS = new Set([
+  'χμ','χμμ','χμμμ','χμμμμ','εμ','αμ','αχ','ωχ','ωπ','ωπα',
+  'χαχα','χαχαχα','χεχε','χιχι','αχαχα',
+  'χα','χε','χι','αα','εε','ωω','ιι','ουου',
+  'hmm','hm','uh','um','er','ah','oh','eh','huh','haha','hehe','hihi',
+]);
+
+function replaceSoundEffects(text) {
+  // Bracketed or parenthesised content: [music], (γέλια), ♪, etc.
+  let t = text.replace(/\[.*?\]/g, '…');
+  t = t.replace(/\(.*?\)/g, '…');
+  t = t.replace(/♪[^♪]*♪?/g, '…');
+  // Known filler words (whole word match)
+  t = t.replace(/\b\S+\b/g, w => FILLER_SOUNDS.has(w.toLowerCase()) ? '…' : w);
+  // Repeated vowel-only tokens like "αααα", "εεεε", "ωωωω" (3+ same char)
+  t = t.replace(/\b([αεηιουωάέήίόύώ])\1{2,}\b/gi, '…');
+  // Collapse multiple … in a row
+  t = t.replace(/(…\s*){2,}/g, '… ');
+  return t.trim();
+}
+
+// ── Number replacement maps ───────────────────────────────────────────────────
+const GREEK_NUMS = {
+  'μηδέν':0,'μηδεν':0,
+  'δύο':2,'δυο':2,
+  'τρία':3,'τρια':3,'τρεις':3,'τριών':3,
+  'τέσσερα':4,'τεσσερα':4,'τέσσερις':4,'τεσσερις':4,'τεσσάρων':4,
+  'πέντε':5,'πεντε':5,
+  'έξι':6,'εξι':6,
+  'επτά':7,'επτα':7,'εφτά':7,'εφτα':7,
+  'οκτώ':8,'οκτω':8,'οχτώ':8,'οχτω':8,
+  'εννέα':9,'εννεα':9,'εννιά':9,'εννια':9,
+  'δέκα':10,'δεκα':10,
+  'έντεκα':11,'εντεκα':11,'ένδεκα':11,'ενδεκα':11,
+  'δώδεκα':12,'δωδεκα':12,
+  'δεκατρία':13,'δεκατρια':13,'δεκατρείς':13,
+  'δεκατέσσερα':14,'δεκατεσσερα':14,
+  'δεκαπέντε':15,'δεκαπεντε':15,
+  'δεκαέξι':16,'δεκαεξι':16,
+  'δεκαεπτά':17,'δεκαεπτα':17,'δεκαεφτά':17,
+  'δεκαοκτώ':18,'δεκαοκτω':18,
+  'δεκαεννέα':19,'δεκαεννεα':19,
+  'είκοσι':20,'εικοσι':20,
+  'τριάντα':30,'τριαντα':30,
+  'σαράντα':40,'σαραντα':40,
+  'πενήντα':50,'πενηντα':50,
+  'εξήντα':60,'εξηντα':60,
+  'εβδομήντα':70,'εβδομηντα':70,
+  'ογδόντα':80,'ογδοντα':80,
+  'ενενήντα':90,'ενενηντα':90,
+  'εκατό':100,'εκατο':100,'εκατόν':100,'εκατον':100,
+  'διακόσια':200,'τριακόσια':300,'τετρακόσια':400,
+  'πεντακόσια':500,'εξακόσια':600,'επτακόσια':700,'εφτακόσια':700,
+  'οκτακόσια':800,'οχτακόσια':800,'εννιακόσια':900,
+  'χίλια':1000,'χιλια':1000,'χίλιοι':1000,'χιλιοι':1000,'χίλιες':1000,
+};
+const EN_NUMS = {
+  'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,
+  'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,
+  'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,
+  'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,
+  'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000,
+};
+
+function replaceNumbers(text) {
+  const map = selectedLang === 'en' ? EN_NUMS : GREEK_NUMS;
+  // Step 1: replace individual number words with digits
+  let t = text.replace(/[^\s]+/g, token => {
+    const clean = token.replace(/^[.,!;:«»"']+|[.,!;:«»"']+$/g, '').toLowerCase();
+    return clean in map ? String(map[clean]) : token;
+  });
+  // Step 2: combine compound numbers
+  // "1000 200 30 5" → 1235, "100 20 3" → 123, "20 3" → 23, etc.
+  // Thousands + hundreds/tens/ones
+  t = t.replace(/\b(1000)\s+([1-9][0-9]{0,2})\b/g, (_, th, rest) => String(+th + +rest));
+  // Hundreds + tens+ones or just ones
+  t = t.replace(/\b([2-9]00)\s+([1-9][0-9]?)\b/g, (_, h, rest) => String(+h + +rest));
+  t = t.replace(/\b(100)\s+([1-9][0-9]?)\b/g,     (_, h, rest) => String(+h + +rest));
+  // Tens + ones (e.g. 20 3 → 23, 30 5 → 35)
+  t = t.replace(/\b([2-9]0)\s+([1-9])\b/g, (_, tens, ones) => String(+tens + +ones));
+  return t;
+}
+
+// ── Time expression replacement ────────────────────────────────────────────────
+// Handles: δυόμιση→2:30 · τρεις και τέταρτο→3:15 · πέντε παρά τέταρτο→4:45
+function replaceTimeExpressions(text) {
+  function normWord(w) {
+    return w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC')
+            .replace(/^[.,!;:«»"'?]+|[.,!;:«»"'?]+$/g, '');
+  }
+  function fmt(h, m) { return h + ':' + String(m).padStart(2, '0'); }
+
+  // Hour words (unaccented) → integer
+  const HOURS = {
+    'μηδεν':0,'μεσανυχτα':0,'μεσημερι':12,
+    'μια':1,'μιας':1,'ενα':1,'ενας':1,
+    'δυο':2,'τρεις':3,'τρια':3,
+    'τεσσερις':4,'τεσσερα':4,'πεντε':5,'εξι':6,
+    'εφτα':7,'επτα':7,'οχτω':8,'οκτω':8,
+    'εννια':9,'εννεα':9,'δεκα':10,'εντεκα':11,'ενδεκα':11,'δωδεκα':12,
+  };
+  // Minute words (unaccented) → integer
+  const MINS = {
+    'μιση':30,'μισι':30,'τεταρτο':15,
+    'πεντε':5,'δεκα':10,'εικοσι':20,'εικοσιπεντε':25,
+    'τριαντα':30,'σαραντα':40,'πενηντα':50,
+  };
+  // Compound "X-μιση" single words → hour number (always :30)
+  const COMPOUND = {
+    'δυομιση':2,'δυομισι':2,'τριαμιση':3,'τριαμισι':3,
+    'τεσσερομιση':4,'τεσσερομισι':4,'πεντεμιση':5,'πεντεμισι':5,
+    'εξιμιση':6,'εξιμισι':6,'εφταμιση':7,'εφταμισι':7,
+    'οχτωμιση':8,'οχτωμισι':8,'εννιαμιση':9,'εννιαμισι':9,
+    'δεκαμιση':10,'δεκαμισι':10,'εντεκαμιση':11,'εντεκαμισι':11,
+  };
+
+  // Split preserving whitespace: [word, space, word, space, ...]
+  const toks = text.split(/(\s+)/);
+  const out = [...toks];
+  const SKIP = Symbol('skip');
+
+  for (let i = 0; i < toks.length; i++) {
+    if (i % 2 !== 0 || out[i] === SKIP) continue; // odd = space
+    const n = normWord(toks[i]);
+
+    // 1. Compound half-hour single word (e.g. δυόμιση → 2:30)
+    if (n in COMPOUND) { out[i] = fmt(COMPOUND[n], 30); continue; }
+
+    // 2. [hour] (και|παρά) (μισή|τέταρτο|minutes)
+    if (n in HOURS) {
+      const ci = i + 2; // connector word index
+      const mi = i + 4; // minutes word index
+      if (ci < toks.length && mi < toks.length) {
+        const cn = normWord(toks[ci]);
+        const mn = normWord(toks[mi]);
+        if ((cn === 'και' || cn === 'παρα') && mn in MINS) {
+          const h = HOURS[n];
+          const rawMins = MINS[mn];
+          let rh = h, rm = rawMins;
+          if (cn === 'παρα') {          // "τρεις παρά τέταρτο" = 2:45
+            rh = h > 0 ? h - 1 : 23;
+            rm = 60 - rawMins;
+          }
+          out[i] = fmt(rh, rm);
+          // erase: space(i+1), connector(i+2), space(i+3), minutes(i+4)
+          out[i+1] = out[i+2] = out[i+3] = out[i+4] = SKIP;
+          i += 4;
+          continue;
+        }
+      }
+    }
+  }
+  return out.filter(t => t !== SKIP).join('');
+}
+
+// Detect if a word token is purely ASCII letters (i.e. English)
+function isEnglishWord(w) {
+  return /^[a-zA-Z]{2,}$/.test(w.replace(/[.,!;:«»"'?-]/g, ''));
+}
+
+function processText(raw) {
+  let t = raw;
+
+  // 1. Sound effects → …
+  if (document.getElementById('chkSfx').checked) {
+    t = replaceSoundEffects(t);
+  }
+
+  // 2. Punctuation removal
+  if (document.getElementById('chkPunct').checked) {
+    t = t.replace(/[.,،!]/g, '');
+    t = t.replace(/  +/g, ' ').trim();
+  }
+
+  // 3. Time expressions (before plain number replacement)
+  if (document.getElementById('chkNums').checked && selectedLang !== 'en') {
+    t = replaceTimeExpressions(t);
+  }
+
+  // 4. Number words → digits
+  if (document.getElementById('chkNums').checked) {
+    t = replaceNumbers(t);
+  }
+
+  // 5. Lowercase everything EXCEPT:
+  //    a) Mid-sentence proper nouns (capitalised in origText)
+  //    b) English words → preserve original capitalisation from origText
+  const origWords = raw.split(/\s+/);
+  const outWords  = t.split(/\s+/);
+  t = outWords.map((word, i) => {
+    if (!word) return word;
+    const orig = origWords[i] || '';
+    // English word: preserve original spelling entirely
+    if (isEnglishWord(word)) return orig || word;
+    // Greek proper noun (capitalised mid-sentence in orig): cap first letter
+    if (i > 0 && orig[0] && orig[0] === orig[0].toUpperCase() && orig[0] !== orig[0].toLowerCase()) {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+    return word.toLowerCase();
+  }).join(' ');
+
+  // 6. Profanity censoring (after lowercasing so roots match)
+  if (document.getElementById('chkSwear').checked) {
+    t = censorText(t);
+  }
+
+  return t;
+}
+
+// Apply capitalization across all subtitles based on selected mode
+function stripTonos(str) {
+  // Remove Greek accent marks (tonos / oxia) for ALL CAPS mode
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC');
+}
+
+function applyCapitalization() {
+  const mode = document.querySelector('input[name="capMode"]:checked').value;
+  subtitles.forEach((sub, i) => {
+    let text = sub.text; // already lowercased by processText
+    if (mode === 'all') {
+      // Every subtitle: capitalize first letter
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+    } else if (mode === 'allcaps') {
+      // Uppercase everything, strip accent marks
+      text = stripTonos(text).toUpperCase();
+    } else {
+      // 'after_q': capitalize only after a ; (Greek question mark), or first subtitle
+      const prev = subtitles[i - 1];
+      const prevEndsQ = i === 0 || (prev && prev.text.trimEnd().endsWith(';'));
+      if (prevEndsQ) text = text.charAt(0).toUpperCase() + text.slice(1);
+    }
+    sub.text = text;
+  });
+}
+
+// Radio button highlight sync
+document.querySelectorAll('input[name="capMode"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const val = document.querySelector('input[name="capMode"]:checked').value;
+    document.getElementById('capOpt1').classList.toggle('selected', val === 'all');
+    document.getElementById('capOpt2').classList.toggle('selected', val === 'after_q');
+    document.getElementById('capOpt3').classList.toggle('selected', val === 'allcaps');
+    if (!subtitles.length) return;
+    const sy1 = window.scrollY;
+    subtitles.forEach(s => { s.text = processText(s.origText || s.text); });
+    applyCapitalization();
+    renderEditor();
+    setTimeout(() => window.scrollTo({ top: sy1, behavior: 'instant' }), 0);
+  });
+});
+
+// Re-apply when any text processing checkbox changes
+['chkPunct', 'chkNums', 'chkSwear', 'chkSfx'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (!subtitles.length) return;
+    const sy2 = window.scrollY;
+    subtitles.forEach(s => { s.text = processText(s.origText || s.text); });
+    applyCapitalization();
+    renderEditor();
+    setTimeout(() => window.scrollTo({ top: sy2, behavior: 'instant' }), 0);
+  });
+});
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+function updateBtn() {
+  const hasKey  = apiKeyEl.value.trim().length > 0 || apiKeyEl.placeholder.includes('server key');
+  const hasFile = selectedFile !== null;
+  document.getElementById('genBtn').disabled = !(hasKey && hasFile);
+}
+
+async function doTranscribe() {
+  if (!selectedFile) return;
+  hide('editorWrap');
+  hide('errBox');
+  show('progressCard');
+  show('stickyBar', false);
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('progressMsg').textContent =
+    selectedProv === 'elevenlabs' ? 'Transcribing with ElevenLabs Scribe…' :
+    selectedProv === 'groq'       ? 'Transcribing with Groq Whisper…' :
+                                    'Transcribing with OpenAI Whisper…';
+
+  const fd = new FormData();
+  fd.append('file',              selectedFile);
+  fd.append('provider',          selectedProv);
+  fd.append('api_key',           apiKeyEl.value.trim());
+  fd.append('language',          selectedLang);
+  fd.append('silence_threshold', silenceSlider.value);
+  fd.append('max_chars',         charsSlider.value);
+  fd.append('keep_connected',    document.getElementById('keepConn').checked ? 'true' : 'false');
+  fd.append('vocab_hint',        document.getElementById('vocabHint').value.trim());
+
+  try {
+    const resp = await fetch('/transcribe', { method: 'POST', body: fd });
+    if (!resp.ok) {
+      let msg = resp.statusText;
+      try { msg = (await resp.json()).detail || msg; } catch {}
+      throw new Error(msg);
+    }
+    const data = await resp.json();
+
+    // Reset speaker map
+    Object.keys(spkMap).forEach(k => delete spkMap[k]);
+    spkCount = 0;
+
+    subtitles = data.subtitles.map(s => ({
+      id: nextId++,
+      start: s.start,
+      end: s.end,
+      origText: s.text,
+      text: processText(s.text),
+      speaker: s.speaker,
+    }));
+    applyCapitalization();
+
+    initAudio();
+    renderEditor();
+    hide('progressCard');
+    show('editorWrap');
+    show('stickyBar');
+  } catch (err) {
+    hide('progressCard');
+    const box = document.getElementById('errBox');
+    box.textContent = 'Error: ' + err.message;
+    box.classList.add('show');
+  } finally {
+    updateBtn();
+  }
+}
+
+document.getElementById('genBtn').addEventListener('click', doTranscribe);
+document.getElementById('retryBtn').addEventListener('click', doTranscribe);
+
+// ── Audio Player ──────────────────────────────────────────────────────────────
+function initAudio() {
+  if (audioEl) { audioEl.pause(); URL.revokeObjectURL(audioEl.src); cancelAnimationFrame(rafId); }
+  audioEl = new Audio(URL.createObjectURL(selectedFile));
+  audioEl.addEventListener('loadedmetadata', updatePlayerUI);
+  audioEl.addEventListener('ended', () => {
+    document.getElementById('playBtn').textContent = '▶';
+    cancelAnimationFrame(rafId);
+  });
+  audioEl.addEventListener('play',  () => { document.getElementById('playBtn').textContent = '⏸'; schedRaf(); });
+  audioEl.addEventListener('pause', () => { document.getElementById('playBtn').textContent = '▶'; cancelAnimationFrame(rafId); });
+}
+
+function schedRaf() {
+  rafId = requestAnimationFrame(() => { updatePlayerUI(); syncHighlight(); if (!audioEl.paused) schedRaf(); });
+}
+
+function updatePlayerUI() {
+  if (!audioEl) return;
+  const cur = audioEl.currentTime, dur = audioEl.duration || 0;
+  document.getElementById('playerTime').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
+  document.getElementById('progressFill').style.width = dur ? ((cur / dur) * 100) + '%' : '0%';
+}
+
+function syncHighlight() {
+  if (!audioEl) return;
+  const t = audioEl.currentTime;
+  const active = subtitles.find(s => t >= s.start && t <= s.end);
+  const newId = active ? active.id : null;
+
+  // Always update the highlight class, even while editing
+  if (newId !== activeCardId) {
+    activeCardId = newId;
+    document.querySelectorAll('.sub-card').forEach(c => c.classList.remove('playing'));
+    if (newId) {
+      const card = document.querySelector(`.sub-card[data-id="${newId}"]`);
+      if (card) card.classList.add('playing');
+    }
+  }
+
+  // Auto-scroll only when no subtitle textarea is focused
+  if (newId) {
+    const focused = document.activeElement;
+    const editingSubtitle = focused && focused.matches('.sub-text');
+    if (!editingSubtitle) {
+      const card = document.querySelector(`.sub-card[data-id="${newId}"]`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+// Progress bar click → seek
+document.getElementById('progressWrap').addEventListener('click', e => {
+  if (!audioEl || !audioEl.duration) return;
+  const rect = document.getElementById('progressWrap').getBoundingClientRect();
+  audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+  updatePlayerUI(); syncHighlight();
+});
+
+// Play/pause button
+document.getElementById('playBtn').addEventListener('click', togglePlay);
+
+// Space bar
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !e.target.matches('textarea, input')) {
+    e.preventDefault();
+    togglePlay();
+  }
+});
+
+function togglePlay() {
+  if (!audioEl) return;
+  audioEl.paused ? audioEl.play() : audioEl.pause();
+}
+
+// ── Render editor ─────────────────────────────────────────────────────────────
+function renderEditor() {
+  const list = document.getElementById('subList');
+  list.innerHTML = '';
+
+  subtitles.forEach((sub, idx) => {
+    const card = document.createElement('div');
+    card.className = 'sub-card';
+    card.dataset.id = sub.id;
+
+    const spkHtml = sub.speaker
+      ? `<span class="sub-speaker ${spkClass(sub.speaker)}">${spkLabel(sub.speaker)}</span>`
+      : '';
+
+    card.innerHTML = `
+      <div class="sub-header">
+        <span class="sub-num">${idx + 1}</span>
+        <span class="sub-time">${fmtTimeSrt(sub.start)} → ${fmtTimeSrt(sub.end)}</span>
+        ${spkHtml}
+        <button class="sub-seek" title="Play from here">▶ play here</button>
+        <button class="sub-del" title="Delete">×</button>
+      </div>
+      <textarea class="sub-text" rows="2" spellcheck="true">${escHtml(sub.text)}</textarea>
+    `;
+
+    // "Play here" button → seek and play (explicit, no accidental seeks)
+    card.querySelector('.sub-seek').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!audioEl) return;
+      audioEl.currentTime = sub.start;
+      if (audioEl.paused) audioEl.play();
+    });
+
+    // Delete card
+    card.querySelector('.sub-del').addEventListener('click', () => {
+      const savedY = window.scrollY;
+      subtitles = subtitles.filter(s => s.id !== sub.id);
+      renderEditor();
+      setTimeout(() => window.scrollTo({ top: savedY, behavior: 'instant' }), 0);
+    });
+
+    const ta = card.querySelector('.sub-text');
+    autoResize(ta);
+
+    ta.addEventListener('input', () => {
+      sub.text = ta.value;
+      sub.origText = ta.value; // manual edit = new source of truth
+      autoResize(ta);
+    });
+
+    // Enter → split at cursor
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        splitSub(sub.id, ta.selectionStart);
+      }
+      // Backspace at very start → merge up
+      if (e.key === 'Backspace' && ta.selectionStart === 0 && ta.selectionEnd === 0 && idx > 0) {
+        e.preventDefault();
+        mergeWithPrev(sub.id);
+      }
+      // Ctrl+Q → wrap selection in «»
+      if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
+        e.preventDefault();
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        if (start !== end) {
+          const val = ta.value;
+          const selected = val.slice(start, end);
+          const wrapped = '«' + selected + '»';
+          ta.value = val.slice(0, start) + wrapped + val.slice(end);
+          ta.selectionStart = start;
+          ta.selectionEnd = start + wrapped.length;
+          ta.dispatchEvent(new Event('input'));
+        }
+      }
+    });
+
+    list.appendChild(card);
+
+    // Merge gap between cards
+    if (idx < subtitles.length - 1) {
+      const gap = document.createElement('div');
+      gap.className = 'sub-gap';
+      gap.innerHTML = `<div class="sub-gap-line"></div><button class="merge-btn" data-id="${sub.id}">⇕ merge</button><div class="sub-gap-line"></div>`;
+      gap.querySelector('.merge-btn').addEventListener('click', () => {
+        const savedY = window.scrollY;
+        mergeNext(sub.id);
+        setTimeout(() => window.scrollTo({ top: savedY, behavior: 'instant' }), 0);
+      });
+      list.appendChild(gap);
+    }
+  });
+
+  document.getElementById('editorStats').textContent = `${subtitles.length} subtitles`;
+  document.getElementById('stickyStat').textContent  = subtitles.length;
+}
+
+// ── Edit operations ───────────────────────────────────────────────────────────
+function focusWithoutScroll(ta, atEnd = false) {
+  // Focus the textarea and restore scroll position so the page doesn't jump
+  const savedY = window.scrollY;
+  ta.focus({ preventScroll: true });
+  if (atEnd) { ta.selectionStart = ta.selectionEnd = ta.value.length; }
+  window.scrollTo({ top: savedY, behavior: 'instant' });
+}
+
+function splitSub(id, cursor) {
+  const idx = subtitles.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  const sub = subtitles[idx];
+  const t1 = sub.text.slice(0, cursor).trim();
+  const t2 = sub.text.slice(cursor).trim();
+  if (!t1 || !t2) return;
+
+  const ratio = cursor / Math.max(sub.text.length, 1);
+  const mid   = sub.start + (sub.end - sub.start) * ratio;
+
+  subtitles.splice(idx, 1,
+    { id: nextId++, start: sub.start, end: mid,     text: t1, origText: t1, speaker: sub.speaker },
+    { id: nextId++, start: mid,       end: sub.end,  text: t2, origText: t2, speaker: sub.speaker },
+  );
+  const savedY = window.scrollY;
+  renderEditor();
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.sub-card');
+    const ta = cards[idx + 1]?.querySelector('textarea');
+    if (ta) focusWithoutScroll(ta);
+    window.scrollTo({ top: savedY, behavior: 'instant' });
+  }, 0);
+}
+
+function mergeNext(id) {
+  const idx = subtitles.findIndex(s => s.id === id);
+  if (idx < 0 || idx >= subtitles.length - 1) return;
+  const [a, b] = [subtitles[idx], subtitles[idx + 1]];
+  const merged = (a.text + ' ' + b.text).trim();
+  subtitles.splice(idx, 2, { id: nextId++, start: a.start, end: b.end, text: merged, origText: merged, speaker: a.speaker });
+  const savedY = window.scrollY;
+  renderEditor();
+  setTimeout(() => { window.scrollTo({ top: savedY, behavior: 'instant' }); }, 0);
+}
+
+function mergeWithPrev(id) {
+  const idx = subtitles.findIndex(s => s.id === id);
+  if (idx <= 0) return;
+  const savedY = window.scrollY;
+  mergeNext(subtitles[idx - 1].id);
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.sub-card');
+    const ta = cards[idx - 1]?.querySelector('textarea');
+    if (ta) focusWithoutScroll(ta, true);
+    window.scrollTo({ top: savedY, behavior: 'instant' });
+  }, 0);
+}
+
+// ── Download ──────────────────────────────────────────────────────────────────
+function buildSrt() {
+  const keepConn  = document.getElementById('keepConn').checked;
+  const silThresh = parseFloat(silenceSlider.value);
+  const lines = [];
+
+  subtitles.forEach((sub, i) => {
+    const nextStart = i + 1 < subtitles.length ? subtitles[i + 1].start : Infinity;
+    let end = sub.end;
+
+    if (keepConn && nextStart < Infinity) {
+      const gap = nextStart - sub.end;
+      if (gap < silThresh) end = nextStart;
+    }
+
+    // Minimum duration but NEVER overlap next subtitle
+    end = Math.max(end, sub.start + 0.5);
+    if (nextStart < Infinity) end = Math.min(end, nextStart - 0.001);
+
+    lines.push(`${i + 1}\n${fmtTimeSrt(sub.start)} --> ${fmtTimeSrt(end)}\n${sub.text}\n`);
+  });
+  return lines.join('\n');
+}
+
+function download() {
+  const srt  = buildSrt();
+  const blob = new Blob([srt], { type: 'text/plain;charset=utf-8' });
+  const name = (selectedFile ? selectedFile.name.replace(/\.[^.]+$/, '') : 'subtitles') + '.srt';
+  const url  = URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'), { href: url, download: name }).click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('dlBtn').addEventListener('click', download);
+document.getElementById('stickyDl').addEventListener('click', download);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+
+function fmtTime(s) {
+  s = s || 0;
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function fmtTimeSrt(s) {
+  const ms  = Math.round((s || 0) * 1000);
+  const hh  = Math.floor(ms / 3600000);
+  const mm  = Math.floor((ms % 3600000) / 60000);
+  const ss  = Math.floor((ms % 60000) / 1000);
+  const mmm = ms % 1000;
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')},${String(mmm).padStart(3,'0')}`;
+}
+function fmtBytes(b) { return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB'; }
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function show(id, val=true) { document.getElementById(id).classList[val?'add':'remove']('show'); }
+function hide(id) { document.getElementById(id).classList.remove('show'); }
+
+// ── Animated Export ───────────────────────────────────────────────────────────
+
+// Default style config
+const animStyle = {
+  fontFamily:    'Roboto',
+  fontSize:      72,
+  textColor:     '#ffffff',
+  bold:          true,
+  italic:        false,
+  letterSpacing: 0,
+  outlineColor:  '#000000',
+  outlineWidth:  4,
+  shadowOn:      true,
+  shadowColor:   '#000000',
+  shadowAlpha:   0.7,
+  shadowBlur:    12,
+  bgOn:          false,
+  bgColor:       '#000000',
+  bgAlpha:       0.45,
+  bgPad:         16,
+  bgRadius:      8,
+  posY:          80,   // % from top
+  maxWidth:      85,   // % of canvas width
+  textAlign:     'center',
+};
+
+// Default animation config
+const animAnim = {
+  entryAnim:  'fade',
+  entryDur:   0.25,
+  exitAnim:   'fade',
+  exitDur:    0.20,
+  everyNOn:   false,
+  everyN:     2,
+};
+
+// Default emphasis config
+const emphConfig = {
+  longest:      true,
+  last:         true,
+  afterPause:   false,
+  interval:     1,
+  color:        '#FFD700',
+  scale:        1.25,
+  bold:         true,
+  italic:       false,
+  animType:     'none',
+};
+
+// ── Card builder ──────────────────────────────────────────────────────────────
+let _animCardWired = false;
+function buildAnimCard() {
+  const card = document.getElementById('animExportCard');
+  if (!subtitles.length) { card.classList.remove('show'); return; }
+  card.classList.add('show');
+  if (_animCardWired) return;   // event listeners already attached — don't double-wire
+  _animCardWired = true;
+
+  // Wire tabs
+  document.querySelectorAll('.anim-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.anim-tab').forEach(b => b.classList.remove('on'));
+      document.querySelectorAll('.anim-panel').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById('anim-panel-' + btn.dataset.atab).classList.add('on');
+    });
+  });
+
+  // ── Style tab wiring ──────────────────────────────────────────────────────
+
+  // Font family
+  const fontSel = document.getElementById('ac-fontFamily');
+  fontSel.value = animStyle.fontFamily;
+  fontSel.addEventListener('change', () => { animStyle.fontFamily = fontSel.value; });
+
+  // Load local fonts
+  document.getElementById('ac-loadFontsBtn').addEventListener('click', async () => {
+    if (!window.queryLocalFonts) {
+      alert('Local font access is only supported in Chrome 103+. Use the dropdown to pick a Google Font instead.');
+      return;
+    }
+    try {
+      const fonts = await window.queryLocalFonts();
+      const seen = new Set();
+      fonts.forEach(f => {
+        const fam = f.family;
+        if (!seen.has(fam)) {
+          seen.add(fam);
+          const opt = document.createElement('option');
+          opt.value = fam;
+          opt.textContent = fam;
+          opt.dataset.local = '1';
+          fontSel.appendChild(opt);
+        }
+      });
+      fontSel.focus();
+    } catch(e) {
+      alert('Font access was denied or an error occurred: ' + e.message);
+    }
+  });
+
+  // Font size
+  const fontSizeEl  = document.getElementById('ac-fontSize');
+  const fontSizeVal = document.getElementById('ac-fontSizeVal');
+  fontSizeEl.addEventListener('input', () => {
+    animStyle.fontSize = +fontSizeEl.value;
+    fontSizeVal.textContent = fontSizeEl.value + 'px';
+  });
+
+  // Text color
+  document.getElementById('ac-textColor').addEventListener('input', e => { animStyle.textColor = e.target.value; });
+
+  // Bold
+  const boldBtn = document.getElementById('ac-boldBtn');
+  boldBtn.classList.toggle('on', animStyle.bold);
+  boldBtn.addEventListener('click', () => {
+    animStyle.bold = !animStyle.bold;
+    boldBtn.classList.toggle('on', animStyle.bold);
+  });
+
+  // Italic
+  const italicBtn = document.getElementById('ac-italicBtn');
+  italicBtn.addEventListener('click', () => {
+    animStyle.italic = !animStyle.italic;
+    italicBtn.classList.toggle('on', animStyle.italic);
+  });
+
+  // Letter spacing
+  const lsEl  = document.getElementById('ac-letterSpacing');
+  const lsVal = document.getElementById('ac-letterSpacingVal');
+  lsEl.addEventListener('input', () => {
+    animStyle.letterSpacing = +lsEl.value;
+    lsVal.textContent = lsEl.value + 'px';
+  });
+
+  // Outline color
+  document.getElementById('ac-outlineColor').addEventListener('input', e => { animStyle.outlineColor = e.target.value; });
+
+  // Outline width
+  const owEl  = document.getElementById('ac-outlineWidth');
+  const owVal = document.getElementById('ac-outlineWidthVal');
+  owEl.addEventListener('input', () => {
+    animStyle.outlineWidth = +owEl.value;
+    owVal.textContent = owEl.value + 'px';
+  });
+
+  // Shadow toggle
+  const shadowOnEl = document.getElementById('ac-shadowOn');
+  const shadowCtrl = document.getElementById('ac-shadowControls');
+  shadowOnEl.checked = animStyle.shadowOn;
+  shadowOnEl.addEventListener('change', () => {
+    animStyle.shadowOn = shadowOnEl.checked;
+  });
+
+  // Shadow color — convert rgba default to hex for color picker
+  document.getElementById('ac-shadowColor').addEventListener('input', e => { animStyle.shadowColor = e.target.value; });
+
+  // Shadow blur
+  const sbEl  = document.getElementById('ac-shadowBlur');
+  const sbVal = document.getElementById('ac-shadowBlurVal');
+  sbEl.addEventListener('input', () => {
+    animStyle.shadowBlur = +sbEl.value;
+    sbVal.textContent = sbEl.value;
+  });
+
+  // Background toggle
+  const bgOnEl   = document.getElementById('ac-bgOn');
+  const bgCtrl   = document.getElementById('ac-bgControls');
+  bgOnEl.addEventListener('change', () => {
+    animStyle.bgOn = bgOnEl.checked;
+    bgCtrl.style.display = bgOnEl.checked ? 'block' : 'none';
+  });
+
+  // Background color
+  document.getElementById('ac-bgColor').addEventListener('input', e => { animStyle.bgColor = e.target.value; });
+
+  // Background alpha
+  const bgAlphaEl  = document.getElementById('ac-bgAlpha');
+  const bgAlphaVal = document.getElementById('ac-bgAlphaVal');
+  bgAlphaEl.addEventListener('input', () => {
+    animStyle.bgAlpha = bgAlphaEl.value / 100;
+    bgAlphaVal.textContent = bgAlphaEl.value + '%';
+  });
+
+  // Background padding
+  const bgPadEl  = document.getElementById('ac-bgPad');
+  const bgPadVal = document.getElementById('ac-bgPadVal');
+  bgPadEl.addEventListener('input', () => {
+    animStyle.bgPad = +bgPadEl.value;
+    bgPadVal.textContent = bgPadEl.value + 'px';
+  });
+
+  // Background radius
+  const bgRadEl  = document.getElementById('ac-bgRadius');
+  const bgRadVal = document.getElementById('ac-bgRadiusVal');
+  bgRadEl.addEventListener('input', () => {
+    animStyle.bgRadius = +bgRadEl.value;
+    bgRadVal.textContent = bgRadEl.value + 'px';
+  });
+
+  // Position Y
+  const posYEl  = document.getElementById('ac-posY');
+  const posYVal = document.getElementById('ac-posYVal');
+  posYEl.addEventListener('input', () => {
+    animStyle.posY = +posYEl.value;
+    posYVal.textContent = posYEl.value + '%';
+  });
+
+  // Max width
+  const mwEl  = document.getElementById('ac-maxWidth');
+  const mwVal = document.getElementById('ac-maxWidthVal');
+  mwEl.addEventListener('input', () => {
+    animStyle.maxWidth = +mwEl.value;
+    mwVal.textContent = mwEl.value + '%';
+  });
+
+  // Text align
+  document.querySelectorAll('.align-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      animStyle.textAlign = btn.dataset.align;
+    });
+  });
+
+  // ── Animation tab wiring ──────────────────────────────────────────────────
+
+  // Entry animation pill group
+  wirePillGroup('ac-entryAnim', v => { animAnim.entryAnim = v; });
+
+  // Entry duration
+  const edEl  = document.getElementById('ac-entryDur');
+  const edVal = document.getElementById('ac-entryDurVal');
+  edEl.addEventListener('input', () => {
+    animAnim.entryDur = +edEl.value;
+    edVal.textContent = (+edEl.value).toFixed(2) + 's';
+  });
+
+  // Exit animation pill group
+  wirePillGroup('ac-exitAnim', v => { animAnim.exitAnim = v; });
+
+  // Exit duration
+  const exdEl  = document.getElementById('ac-exitDur');
+  const exdVal = document.getElementById('ac-exitDurVal');
+  exdEl.addEventListener('input', () => {
+    animAnim.exitDur = +exdEl.value;
+    exdVal.textContent = (+exdEl.value).toFixed(2) + 's';
+  });
+
+  // Every-N toggle
+  const evNOnEl  = document.getElementById('ac-everyNOn');
+  const evNEl    = document.getElementById('ac-everyN');
+  const evNVal   = document.getElementById('ac-everyNVal');
+  evNOnEl.addEventListener('change', () => {
+    animAnim.everyNOn = evNOnEl.checked;
+    evNEl.disabled = !evNOnEl.checked;
+  });
+  evNEl.addEventListener('input', () => {
+    animAnim.everyN = +evNEl.value;
+    evNVal.textContent = evNEl.value;
+  });
+
+  // ── Emphasis tab wiring ───────────────────────────────────────────────────
+
+  document.getElementById('ac-emphLongest').addEventListener('change', e => { emphConfig.longest    = e.target.checked; });
+  document.getElementById('ac-emphLast').addEventListener('change',    e => { emphConfig.last       = e.target.checked; });
+  document.getElementById('ac-emphPause').addEventListener('change',   e => { emphConfig.afterPause = e.target.checked; });
+
+  wirePillGroup('ac-emphInterval', v => { emphConfig.interval = +v; });
+
+  document.getElementById('ac-emphColor').addEventListener('input', e => { emphConfig.color = e.target.value; });
+
+  const esEl  = document.getElementById('ac-emphScale');
+  const esVal = document.getElementById('ac-emphScaleVal');
+  esEl.addEventListener('input', () => {
+    emphConfig.scale = +esEl.value;
+    esVal.textContent = (+esEl.value).toFixed(2) + '×';
+  });
+
+  document.getElementById('ac-emphBold').addEventListener('change',   e => { emphConfig.bold   = e.target.checked; });
+  document.getElementById('ac-emphItalic').addEventListener('change', e => { emphConfig.italic  = e.target.checked; });
+
+  wirePillGroup('ac-emphAnimType', v => { emphConfig.animType = v; });
+
+  // ── Export tab wiring ─────────────────────────────────────────────────────
+
+  document.getElementById('ac-previewBtn').addEventListener('click', openPreview);
+  document.getElementById('ac-assBtn').addEventListener('click', () => downloadASS());
+  document.getElementById('ac-webmBtn').addEventListener('click', () => renderWebM());
+}
+
+// Helper: wire a pill-button group
+function wirePillGroup(containerId, onChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      onChange(btn.dataset.val);
+    });
+  });
+}
+
+// ── Emphasis detection ────────────────────────────────────────────────────────
+function getEmphasizedWordIndices(sub, allSubs, cfg) {
+  const words = sub.text.replace(/〈([^〉]+)〉/g, '$1').split(/\s+/).filter(Boolean);
+  if (!words.length) return new Set();
+
+  const result = new Set();
+
+  // Manual marks take priority always
+  let wordIdx = 0;
+  const rawWords = sub.text.split(/\s+/).filter(Boolean);
+  rawWords.forEach((w, i) => {
+    if (/^〈.+〉$/.test(w)) result.add(i);
+  });
+
+  // Check interval — find subtitle index
+  const subIdx = allSubs.indexOf(sub);
+  const intervalOk = (subIdx % cfg.interval) === 0;
+  if (!intervalOk) return result;
+
+  // Auto-detect: longest word (by character count, skip punctuation)
+  if (cfg.longest) {
+    let bestLen = 0, bestIdx = -1;
+    words.forEach((w, i) => {
+      const clean = w.replace(/[.,;:!?«»〈〉]/g, '');
+      if (clean.length > bestLen) { bestLen = clean.length; bestIdx = i; }
+    });
+    if (bestIdx >= 0) result.add(bestIdx);
+  }
+
+  // Auto-detect: last word of sentence (text ends with ; or .)
+  if (cfg.last) {
+    const trimmed = sub.text.trim();
+    if (/[;.]$/.test(trimmed) && words.length > 0) {
+      result.add(words.length - 1);
+    }
+  }
+
+  // Auto-detect: first word after long pause (gap > 0.8s from previous sub end)
+  if (cfg.afterPause) {
+    const idx = allSubs.indexOf(sub);
+    if (idx > 0) {
+      const prev = allSubs[idx - 1];
+      const gap  = sub.start - prev.end;
+      if (gap > 0.8 && words.length > 0) result.add(0);
+    }
+  }
+
+  return result;
+}
+
+// ── Canvas renderer ───────────────────────────────────────────────────────────
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+function hexToRgb(hex) {
+  // Returns {r,g,b} from #RRGGBB
+  const n = parseInt(hex.replace('#',''), 16);
+  return { r: (n>>16)&255, g: (n>>8)&255, b: n&255 };
+}
+
+function renderSubtitleFrame(ctx, W, H, t, subs, style, emph) {
+  ctx.clearRect(0, 0, W, H);
+
+  const sub = subs.find(s => t >= s.start && t <= s.end);
+  if (!sub) return;
+
+  const subIdx  = subs.indexOf(sub);
+  const dur     = sub.end - sub.start;
+  const elapsed = t - sub.start;
+  const remain  = sub.end - t;
+
+  // Entry progress (0 → 1 over entryDur)
+  const entryDur  = animAnim.entryDur > 0 ? animAnim.entryDur : 0.001;
+  const exitDur   = animAnim.exitDur  > 0 ? animAnim.exitDur  : 0.001;
+  const entryP    = clamp01(elapsed / entryDur);
+  const exitP     = clamp01(remain  / exitDur);   // 1 = fully visible, 0 = gone
+
+  // Every-N check
+  const animates  = !animAnim.everyNOn || (subIdx % animAnim.everyN === 0);
+
+  // Global alpha from animations
+  let globalAlpha = 1;
+  let scaleEntry  = 1, slideYOffset = 0;
+
+  if (animates) {
+    // Entry
+    if (animAnim.entryAnim === 'fade') {
+      globalAlpha = Math.min(globalAlpha, entryP);
+    } else if (animAnim.entryAnim === 'pop') {
+      globalAlpha = Math.min(globalAlpha, entryP);
+      scaleEntry  = 0.5 + 0.5 * entryP;
+    } else if (animAnim.entryAnim === 'slideup') {
+      globalAlpha   = Math.min(globalAlpha, entryP);
+      slideYOffset  = (1 - entryP) * 80; // pixels
+    }
+    // typewriter is handled word-by-word below
+
+    // Exit
+    if (animAnim.exitAnim === 'fade') {
+      globalAlpha = Math.min(globalAlpha, exitP);
+    } else if (animAnim.exitAnim === 'shrink') {
+      globalAlpha = Math.min(globalAlpha, exitP);
+      scaleEntry  *= (0.5 + 0.5 * exitP);
+    } else if (animAnim.exitAnim === 'instant') {
+      if (remain < 0.05) globalAlpha = 0;
+    }
+  }
+
+  if (globalAlpha <= 0) return;
+
+  // Parse text: strip 〈〉 markers, identify raw words
+  const rawWords  = sub.text.split(/\s+/).filter(Boolean);
+  const cleanWords = rawWords.map(w => w.replace(/^〈|〉$/g, ''));
+  const emphIdxSet = getEmphasizedWordIndices(sub, subs, emph);
+
+  // Build font strings
+  const baseFont = `${style.bold ? 'bold ' : ''}${style.italic ? 'italic ' : ''}${style.fontSize}px "${style.fontFamily}", sans-serif`;
+  const emphFont = `${emph.bold ? 'bold ' : ''}${emph.italic ? 'italic ' : ''}${Math.round(style.fontSize * emph.scale)}px "${style.fontFamily}", sans-serif`;
+
+  // Measure words and wrap into lines
+  ctx.font = baseFont;
+  const maxW     = W * (style.maxWidth / 100);
+  const spaceW   = ctx.measureText(' ').width + (style.letterSpacing || 0);
+  const lineH    = style.fontSize * 1.28;
+
+  const lines = []; // array of arrays of {word, clean, isEmph, x_offset}
+  let currentLine = [], currentW = 0;
+
+  cleanWords.forEach((clean, i) => {
+    const isEmph = emphIdxSet.has(i);
+    ctx.font = isEmph ? emphFont : baseFont;
+    const ww = ctx.measureText(clean).width + (style.letterSpacing * clean.length || 0);
+    if (currentLine.length > 0 && currentW + spaceW + ww > maxW) {
+      lines.push(currentLine);
+      currentLine = [];
+      currentW    = 0;
+    }
+    currentLine.push({ clean, isEmph, w: ww, rawIdx: i });
+    currentW += (currentLine.length > 1 ? spaceW : 0) + ww;
+  });
+  if (currentLine.length) lines.push(currentLine);
+
+  // Compute line widths for alignment
+  const lineWidths = lines.map(line => {
+    let lw = 0;
+    line.forEach((tok, ti) => { lw += tok.w + (ti > 0 ? spaceW : 0); });
+    return lw;
+  });
+
+  const totalTextH = lines.length * lineH;
+  const centerX    = W / 2;
+  const baseY      = (H * style.posY / 100) - totalTextH / 2 + slideYOffset;
+
+  // Save/restore for global alpha + scale transform
+  ctx.save();
+  ctx.globalAlpha = globalAlpha;
+
+  if (scaleEntry !== 1) {
+    ctx.translate(centerX, baseY + totalTextH / 2);
+    ctx.scale(scaleEntry, scaleEntry);
+    ctx.translate(-centerX, -(baseY + totalTextH / 2));
+  }
+
+  // Typewriter: compute how many chars to reveal
+  let twRevealCount = Infinity;
+  if (animates && animAnim.entryAnim === 'typewriter') {
+    const totalChars = cleanWords.join('').length;
+    twRevealCount    = Math.floor(entryP * totalChars);
+  }
+  let twCharsSeen = 0;
+
+  lines.forEach((line, li) => {
+    const lw   = lineWidths[li];
+    const lineY = baseY + li * lineH + style.fontSize; // baseline
+
+    // X start depends on alignment
+    let startX;
+    if (style.textAlign === 'left')       startX = (W - maxW) / 2;
+    else if (style.textAlign === 'right') startX = (W + maxW) / 2 - lw;
+    else                                  startX = centerX - lw / 2;
+
+    // Background box per line
+    if (style.bgOn) {
+      const pad = style.bgPad;
+      const rad = style.bgRadius;
+      const bx  = startX - pad;
+      const by  = lineY - style.fontSize - pad + (style.fontSize * 0.12);
+      const bw  = lw + pad * 2;
+      const bh  = lineH + pad * 2 - (style.fontSize * 0.12);
+      const bgRgb = hexToRgb(style.bgColor);
+      ctx.save();
+      ctx.fillStyle = `rgba(${bgRgb.r},${bgRgb.g},${bgRgb.b},${style.bgAlpha})`;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, rad);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    let curX = startX;
+    line.forEach((tok, ti) => {
+      if (ti > 0) curX += spaceW;
+
+      // Typewriter gate
+      const charsHere = tok.clean.length;
+      let visibleStr  = tok.clean;
+      if (animates && animAnim.entryAnim === 'typewriter') {
+        const charsLeft = twRevealCount - twCharsSeen;
+        if (charsLeft <= 0) { twCharsSeen += charsHere; curX += tok.w; return; }
+        visibleStr = tok.clean.slice(0, charsLeft);
+      }
+      twCharsSeen += charsHere;
+
+      ctx.font = tok.isEmph ? emphFont : baseFont;
+
+      // Emphasis animation offset
+      let emphDX = 0, emphDY = 0;
+      if (tok.isEmph && emph.animType !== 'none') {
+        const cycle = t * 6;
+        if (emph.animType === 'bounce') {
+          emphDY = Math.sin(cycle) * 6;
+        } else if (emph.animType === 'shake') {
+          emphDX = Math.sin(cycle * 2.3) * 4;
+        } else if (emph.animType === 'glow') {
+          // handled via shadow below
+        }
+      }
+
+      const drawX = curX + emphDX;
+      const drawY = lineY + emphDY;
+
+      // Shadow
+      if (style.shadowOn) {
+        const shRgb = hexToRgb(style.shadowColor);
+        ctx.shadowColor   = `rgba(${shRgb.r},${shRgb.g},${shRgb.b},${style.shadowAlpha})`;
+        ctx.shadowBlur    = style.shadowBlur;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+      }
+      if (tok.isEmph && emph.animType === 'glow') {
+        const emphRgb = hexToRgb(emph.color);
+        ctx.shadowColor   = `rgba(${emphRgb.r},${emphRgb.g},${emphRgb.b},0.9)`;
+        ctx.shadowBlur    = 18;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      }
+
+      // Outline stroke
+      if (style.outlineWidth > 0) {
+        ctx.lineWidth   = style.outlineWidth * 2;
+        ctx.strokeStyle = style.outlineColor;
+        ctx.lineJoin    = 'round';
+        ctx.shadowColor = 'transparent'; // don't double-shadow the stroke
+        ctx.strokeText(visibleStr, drawX, drawY);
+      }
+
+      // Reset shadow for fill
+      if (style.shadowOn) {
+        const shRgb = hexToRgb(style.shadowColor);
+        ctx.shadowColor   = `rgba(${shRgb.r},${shRgb.g},${shRgb.b},${style.shadowAlpha})`;
+        ctx.shadowBlur    = style.shadowBlur;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+      }
+      if (tok.isEmph && emph.animType === 'glow') {
+        const emphRgb = hexToRgb(emph.color);
+        ctx.shadowColor   = `rgba(${emphRgb.r},${emphRgb.g},${emphRgb.b},0.9)`;
+        ctx.shadowBlur    = 18;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      }
+
+      // Fill text
+      ctx.fillStyle = tok.isEmph ? emph.color : style.textColor;
+      ctx.fillText(visibleStr, drawX, drawY);
+
+      // Clear shadow after each word
+      ctx.shadowColor   = 'transparent';
+      ctx.shadowBlur    = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      curX += tok.w;
+    });
+  });
+
+  ctx.restore();
+}
+
+// ── Preview Modal ─────────────────────────────────────────────────────────────
+let previewRafId   = null;
+let previewRunning = false;
+
+function openPreview() {
+  const modal  = document.getElementById('previewModal');
+  const canvas = document.getElementById('previewCanvas');
+  const ctx    = canvas.getContext('2d', { alpha: true });
+
+  modal.classList.add('show');
+  previewRunning = true;
+
+  // Size canvas display to fit screen
+  const maxH   = window.innerHeight - 120;
+  const scale  = Math.min(maxH / 1920, (window.innerWidth - 40) / 1080);
+  canvas.style.width  = Math.round(1080 * scale) + 'px';
+  canvas.style.height = Math.round(1920 * scale) + 'px';
+
+  // Sync play button with audioEl
+  function updatePrevPlayBtn() {
+    document.getElementById('prevPlayBtn').textContent = (!audioEl || audioEl.paused) ? '▶' : '⏸';
+  }
+
+  function prevLoop() {
+    if (!previewRunning) return;
+    const t = audioEl ? audioEl.currentTime : 0;
+    renderSubtitleFrame(ctx, 1080, 1920, t, subtitles, animStyle, emphConfig);
+    updatePrevPlayBtn();
+    const dur = audioEl ? (audioEl.duration || 0) : 0;
+    document.getElementById('prevTime').textContent = fmtTime(t) + ' / ' + fmtTime(dur);
+    previewRafId = requestAnimationFrame(prevLoop);
+  }
+  prevLoop();
+}
+
+function closePreview() {
+  previewRunning = false;
+  cancelAnimationFrame(previewRafId);
+  document.getElementById('previewModal').classList.remove('show');
+}
+
+document.getElementById('prevCloseBtn').addEventListener('click', closePreview);
+
+document.getElementById('prevPlayBtn').addEventListener('click', () => {
+  if (!audioEl) return;
+  audioEl.paused ? audioEl.play() : audioEl.pause();
+});
+
+document.getElementById('prevBgBtn').addEventListener('click', () => {
+  const wrap = document.getElementById('previewCanvasWrap');
+  if (wrap.classList.contains('dark-bg')) {
+    wrap.classList.replace('dark-bg', 'light-bg');
+    document.getElementById('prevBgBtn').textContent = '⬛ Dark BG';
+  } else {
+    wrap.classList.replace('light-bg', 'dark-bg');
+    document.getElementById('prevBgBtn').textContent = '⬜ Light BG';
+  }
+});
+
+// Close on backdrop click
+document.getElementById('previewModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('previewModal')) closePreview();
+});
+
+// ── ASS Export ────────────────────────────────────────────────────────────────
+function hexToAss(hex) {
+  // #RRGGBB → &H00BBGGRR (ASS is AABBGGRR, alpha 00 = opaque)
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `&H00${String(b).padStart(2,'0').toUpperCase().replace(/./g,c=>c.toString(16).toUpperCase())}${String(g).padStart(2,'0')}${String(r).padStart(2,'0')}`.toUpperCase();
+}
+
+function hexToAssHex(hex) {
+  // Proper conversion: hex #RRGGBB → &H00BBGGRR
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8)  & 0xff;
+  const b =  n        & 0xff;
+  const toH = v => v.toString(16).padStart(2,'0').toUpperCase();
+  return `&H00${toH(b)}${toH(g)}${toH(r)}`;
+}
+
+function assTime(s) {
+  // Seconds → H:MM:SS.cs (centiseconds)
+  const cs  = Math.round(s * 100);
+  const h   = Math.floor(cs / 360000);
+  const mm  = Math.floor((cs % 360000) / 6000);
+  const ss  = Math.floor((cs % 6000)   / 100);
+  const c   = cs % 100;
+  return `${h}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}.${String(c).padStart(2,'0')}`;
+}
+
+function buildASS() {
+  const st = animStyle;
+  const an = animAnim;
+  const em = emphConfig;
+
+  const fontColor    = hexToAssHex(st.textColor);
+  const outlineColor = hexToAssHex(st.outlineColor);
+  const shadowColor  = hexToAssHex(st.shadowColor);
+
+  // Alignment: 2=center-bottom area; we use \an8 (center-top) and \pos for Y
+  // ASS alignment: 1=bottom-left,2=bottom-center,3=bottom-right,
+  //   4=mid-left,5=mid-center,6=mid-right,7=top-left,8=top-center,9=top-right
+  const alignMap = { left: 7, center: 8, right: 9 };
+  const assAlign = alignMap[st.textAlign] || 8;
+
+  const bold   = st.bold   ? -1 : 0;
+  const italic = st.italic ? -1 : 0;
+  const outline = Math.round(st.outlineWidth / 2); // ASS outline is thinner
+  const shadow  = st.shadowOn ? Math.round(st.shadowBlur / 4) : 0;
+
+  // ScaleX/ScaleY in ASS are percentages (100 = normal)
+  const marginV = Math.round(1920 * (1 - st.posY / 100));
+
+  const scriptInfo = [
+    '[Script Info]',
+    'ScriptType: v4.00+',
+    'WrapStyle: 0',
+    'PlayResX: 1080',
+    'PlayResY: 1920',
+    'ScaledBorderAndShadow: yes',
+    '',
+  ].join('\n');
+
+  const styles = [
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    `Style: Default,${st.fontFamily},${st.fontSize},${fontColor},${fontColor},${outlineColor},&H80000000,${bold},${italic},0,0,100,100,${st.letterSpacing},0,1,${outline},${shadow},${assAlign},60,60,${marginV},1`,
+    '',
+  ].join('\n');
+
+  const events = ['[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'];
+
+  subtitles.forEach((sub, i) => {
+    // Entry/exit animation tags
+    let prefix = '';
+    const animates = !an.everyNOn || (i % an.everyN === 0);
+
+    if (animates) {
+      const entDcs = Math.round(an.entryDur * 1000);
+      const extDcs = Math.round(an.exitDur  * 1000);
+      const subDms = Math.round((sub.end - sub.start) * 1000);
+
+      if (an.entryAnim === 'fade' || an.exitAnim === 'fade') {
+        prefix += `\\fad(${entDcs},${extDcs})`;
+      }
+      if (an.entryAnim === 'pop') {
+        // Scale from 50% → 100% over entry duration
+        prefix += `\\t(0,${entDcs},\\fscx50\\fscy50)\\t(0,${entDcs},\\fscx100\\fscy100)`;
+      }
+      if (an.entryAnim === 'slideup') {
+        // Move from Y+80 → Y
+        const y = Math.round(1920 * st.posY / 100);
+        prefix += `\\move(540,${y+80},540,${y},0,${entDcs})`;
+      }
+    }
+
+    // Render text: replace 〈word〉 with emphasis override tags
+    let assText = sub.text.replace(/〈([^〉]+)〉/g, (_, w) => {
+      const ec = hexToAssHex(em.color);
+      const eb = em.bold   ? '\\b1' : '';
+      const ei = em.italic ? '\\i1' : '';
+      const es = Math.round(em.scale * 100);
+      return `{\\c${ec}${eb}${ei}\\fscx${es}\\fscy${es}}${w}{\\r}`;
+    });
+
+    // Replace newlines with ASS newline
+    assText = assText.replace(/\n/g, '\\N');
+
+    const line = `Dialogue: 0,${assTime(sub.start)},${assTime(sub.end)},Default,,0,0,0,,{${prefix}}${assText}`;
+    events.push(line);
+  });
+
+  return scriptInfo + styles + events.join('\n') + '\n';
+}
+
+function downloadASS() {
+  const text = buildASS();
+  const blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' });
+  const name = (selectedFile ? selectedFile.name.replace(/\.[^.]+$/, '') : 'subtitles') + '.ass';
+  const url  = URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'), { href: url, download: name }).click();
+  URL.revokeObjectURL(url);
+}
+
+// ── WebM Renderer ─────────────────────────────────────────────────────────────
+async function renderWebM() {
+  if (!subtitles.length) return;
+
+  const btn     = document.getElementById('ac-webmBtn');
+  const progWrap = document.getElementById('ac-webmProgress');
+  const bar      = document.getElementById('ac-webmBar');
+  const label    = document.getElementById('ac-webmLabel');
+
+  btn.disabled = true;
+  progWrap.classList.add('show');
+  bar.style.width = '0%';
+  label.textContent = 'Rendering… 0%';
+
+  // Check support
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+    label.textContent = 'VP9 WebM not supported in this browser. Try Chrome.';
+    btn.disabled = false;
+    return;
+  }
+
+  const W = 1080, H = 1920, FPS = 25;
+  const canvas = document.createElement('canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d', { alpha: true });
+
+  const stream   = canvas.captureStream(FPS);
+  const recorder = new MediaRecorder(stream, {
+    mimeType:    'video/webm;codecs=vp9',
+    videoBitsPerSecond: 8_000_000,
+  });
+
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+  recorder.start(100); // collect data every 100ms
+
+  const totalDur = subtitles[subtitles.length - 1].end + 0.5;
+  const totalFrames = Math.ceil(totalDur * FPS);
+  const frameMs     = 1000 / FPS;
+
+  // We fake playback by drawing frame-by-frame without real-time constraint
+  // but we still need to yield to keep browser responsive
+  for (let frame = 0; frame < totalFrames; frame++) {
+    const t = frame / FPS;
+    renderSubtitleFrame(ctx, W, H, t, subtitles, animStyle, emphConfig);
+
+    // Update progress every 10 frames
+    if (frame % 10 === 0) {
+      const pct = Math.round((frame / totalFrames) * 100);
+      bar.style.width    = pct + '%';
+      label.textContent  = `Rendering… ${pct}%`;
+      // Yield to browser
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  bar.style.width   = '100%';
+  label.textContent = 'Finalizing…';
+
+  await new Promise(resolve => {
+    recorder.onstop = resolve;
+    recorder.stop();
+  });
+
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const name = (selectedFile ? selectedFile.name.replace(/\.[^.]+$/, '') : 'subtitles') + '_animated.webm';
+  const url  = URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'), { href: url, download: name }).click();
+  URL.revokeObjectURL(url);
+
+  bar.style.width   = '100%';
+  label.textContent = 'Done! File downloaded.';
+  btn.disabled      = false;
+}
+
+// ── Ctrl+E emphasis shortcut ──────────────────────────────────────────────────
+// Patch the existing textarea keydown listener in renderEditor to also handle Ctrl+E.
+// We use event delegation on the sub-list instead of re-wiring each card.
+document.getElementById('subList').addEventListener('keydown', e => {
+  if (!e.target.matches('.sub-text')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+    e.preventDefault();
+    const ta = e.target;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    if (start !== end) {
+      const val      = ta.value;
+      const selected = val.slice(start, end);
+      const wrapped  = '〈' + selected + '〉';
+      ta.value = val.slice(0, start) + wrapped + val.slice(end);
+      ta.selectionStart = start;
+      ta.selectionEnd   = start + wrapped.length;
+      ta.dispatchEvent(new Event('input'));
+    }
+  }
+});
+
+// ── Hook into transcription success ──────────────────────────────────────────
+// Patch renderEditor to also refresh the anim card visibility
+const _origRenderEditor = renderEditor;
+// We redefine renderEditor to call buildAnimCard afterwards
+// (safe because renderEditor is declared as a function declaration, hoisted)
+const _renderEditorPatched = function() {
+  _origRenderEditor();
+  buildAnimCard();
+};
+// Override via a wrapper that replaces the global
+(function() {
+  // Re-assign renderEditor in the outer scope via a trick:
+  // since we can't re-assign a function declaration, we use the
+  // existing call sites. Instead, we directly hook doTranscribe's
+  // success path by overriding the specific call after renderEditor.
+  // The cleanest approach: attach a MutationObserver on editorWrap.
+  const observer = new MutationObserver(() => {
+    const wrap = document.getElementById('editorWrap');
+    if (wrap && wrap.classList.contains('show')) {
+      buildAnimCard();
+    }
+  });
+  observer.observe(document.getElementById('editorWrap'), {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+})();
+</script>
+</body>
+</html>
