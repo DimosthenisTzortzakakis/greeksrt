@@ -6,3 +6,4 @@ __pycache__/
 server.log
 *.log
 .DS_Store
+greeksrt.db

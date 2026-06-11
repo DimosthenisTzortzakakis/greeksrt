@@ -1,0 +1,11 @@
+{
+  "files": ["static/index.html"],
+  "insertBefore": "</head>",
+  "commentSyntax": "html",
+  "cspChecked": true,
+  "framework": "static-html",
+  "devServer": {
+    "url": "http://localhost:8765",
+    "command": "launchctl load ~/Library/LaunchAgents/com.dimostzo.greeksrt.plist"
+  }
+}

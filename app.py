@@ -1,23 +1,74 @@
 import os
 import tempfile
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, Depends, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 import httpx
 
 from splitter import (
     create_subtitles, subtitles_to_srt,
     normalize_words, segments_to_words,
 )
+from database import get_db, User
+from auth import hash_password, verify_password, create_token, require_auth
 
 load_dotenv()
 
 app = FastAPI(title="Greek SRT Generator")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 SUPPORTED_EXT = {'.mp3', '.mp4', '.wav', '.m4a', '.ogg', '.flac', '.webm', '.mpeg', '.mpga'}
 MAX_MB = 25
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/auth/register")
+async def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    email = body.email.strip().lower()
+    if not email or not body.password:
+        raise HTTPException(400, "Email and password required.")
+    if len(body.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters.")
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(409, "An account with that email already exists.")
+    user = User(email=email, password_hash=hash_password(body.password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"token": create_token(user.id, user.email), "email": user.email}
+
+
+@app.post("/auth/login")
+async def login(body: LoginRequest, db: Session = Depends(get_db)):
+    email = body.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(body.password, user.password_hash):
+        raise HTTPException(401, "Invalid email or password.")
+    return {"token": create_token(user.id, user.email), "email": user.email}
+
+
+@app.get("/auth/me")
+async def me(payload: dict = Depends(require_auth)):
+    return {"email": payload["email"], "id": int(payload["sub"])}
 
 
 @app.get("/")
@@ -113,6 +164,7 @@ async def transcribe(
     max_chars:         int   = Form(default=80),
     keep_connected:    str   = Form(default="true"),
     vocab_hint:        str   = Form(default=""),
+    _auth:             dict  = Depends(require_auth),
 ):
     # Resolve API key: form field → env var fallback
     env_map = {"elevenlabs": "ELEVENLABS_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY"}
