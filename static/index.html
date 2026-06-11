@@ -1304,6 +1304,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const TOKEN_KEY = 'grk_token';
+const EMAIL_KEY = 'grk_email';
 let authMode = 'login'; // 'login' | 'register'
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
@@ -1324,12 +1325,21 @@ async function checkAuth() {
   if (!token) { showAuth(); return; }
   try {
     const r = await fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
-    if (!r.ok) throw new Error();
+    if (r.status === 401 || r.status === 403) {
+      // Token genuinely rejected — sign out
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(EMAIL_KEY);
+      showAuth();
+      return;
+    }
+    if (!r.ok) throw new Error('server');
     const user = await r.json();
+    localStorage.setItem(EMAIL_KEY, user.email);
     showApp(user.email);
   } catch {
-    localStorage.removeItem(TOKEN_KEY);
-    showAuth();
+    // Network/server hiccup — keep the session, show the app with cached email
+    const cached = localStorage.getItem(EMAIL_KEY);
+    if (cached) { showApp(cached); } else { showAuth(); }
   }
 }
 
@@ -1368,6 +1378,7 @@ document.getElementById('authSubmit').onclick = async () => {
     const data = await r.json();
     if (!r.ok) { throw new Error(data.detail || 'Something went wrong.'); }
     localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(EMAIL_KEY, data.email);
     showApp(data.email);
   } catch(e) {
     errEl.textContent = e.message;
@@ -1384,6 +1395,7 @@ document.getElementById('authPassword').addEventListener('keydown', e => {
 
 document.getElementById('headerLogout').onclick = () => {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(EMAIL_KEY);
   showAuth();
 };
 

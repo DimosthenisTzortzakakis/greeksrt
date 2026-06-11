@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 SECRET_KEY = os.getenv("SECRET_KEY", "grk-srt-dev-secret-change-me-in-prod-2026")
 ALGORITHM  = "HS256"
-TOKEN_DAYS = 30
+TOKEN_DAYS = 365
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer      = HTTPBearer(auto_error=False)
