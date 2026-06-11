@@ -30,6 +30,23 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 SUPPORTED_EXT = {'.mp3', '.mp4', '.wav', '.m4a', '.ogg', '.flac', '.webm', '.mpeg', '.mpga'}
 MAX_MB = 25
 
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+
+def _allowed_emails() -> set:
+    raw = os.getenv("ALLOWED_EMAILS", "")
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+
+def check_transcribe_access(email: str):
+    allowed = _allowed_emails()
+    if allowed and email.lower() not in allowed:
+        raise HTTPException(
+            403,
+            "Your account doesn't have transcription access yet. "
+            "Ask the owner to add you.",
+        )
+
 
 class RegisterRequest(BaseModel):
     email: str
@@ -61,7 +78,9 @@ async def register(body: RegisterRequest, db: Session = Depends(get_db)):
 async def login(body: LoginRequest, db: Session = Depends(get_db)):
     email = body.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
-    if not user or not verify_password(body.password, user.password_hash):
+    if not user or user.password_hash.startswith("!"):
+        raise HTTPException(401, "Invalid email or password.")
+    if not verify_password(body.password, user.password_hash):
         raise HTTPException(401, "Invalid email or password.")
     return {"token": create_token(user.id, user.email), "email": user.email}
 
@@ -69,6 +88,42 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
 @app.get("/auth/me")
 async def me(payload: dict = Depends(require_auth)):
     return {"email": payload["email"], "id": int(payload["sub"])}
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+@app.post("/auth/google")
+async def google_auth(body: GoogleAuthRequest, db: Session = Depends(get_db)):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(501, "Google sign-in is not configured.")
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": body.credential},
+        )
+    if resp.status_code != 200:
+        raise HTTPException(401, "Invalid Google credential.")
+    info = resp.json()
+    if info.get("aud") != GOOGLE_CLIENT_ID:
+        raise HTTPException(401, "Google credential was issued for another app.")
+    if info.get("email_verified") not in ("true", True):
+        raise HTTPException(401, "Google account email is not verified.")
+    email = info["email"].strip().lower()
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, password_hash="!google")  # no password login
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return {"token": create_token(user.id, user.email), "email": user.email}
+
+
+@app.get("/auth/config")
+async def auth_config():
+    return {"google_client_id": GOOGLE_CLIENT_ID}
 
 
 @app.get("/")
@@ -166,6 +221,8 @@ async def transcribe(
     vocab_hint:        str   = Form(default=""),
     _auth:             dict  = Depends(require_auth),
 ):
+    check_transcribe_access(_auth["email"])
+
     # Resolve API key: form field → env var fallback
     env_map = {"elevenlabs": "ELEVENLABS_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY"}
     resolved_key = api_key.strip() or os.getenv(env_map.get(provider, ""), "").strip()

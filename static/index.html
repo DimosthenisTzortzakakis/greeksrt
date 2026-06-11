@@ -756,6 +756,15 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   box-shadow: 0 4px 16px rgba(0,113,227,.35);
 }
 .auth-submit:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 14px 0; color: var(--muted); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+#googleBtnWrap { display: flex; justify-content: center; margin-bottom: 16px; }
+#googleBtnWrap.hidden, .auth-divider.hidden { display: none; }
 .auth-switch { font-size: 13px; color: var(--muted); text-align: center; }
 .auth-switch button {
   background: none; border: none; color: var(--accent);
@@ -785,6 +794,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
       <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
     </div>
     <button class="auth-submit" id="authSubmit">Sign in</button>
+    <div class="auth-divider hidden" id="authDivider"><span>or</span></div>
+    <div id="googleBtnWrap" class="hidden"></div>
     <div class="auth-switch" id="authSwitch">
       Don't have an account? <button id="authToggle">Create one</button>
     </div>
@@ -812,7 +823,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
     <button class="tab" data-p="groq">Groq Whisper<br><span style="font-size:10px;font-weight:400">Free · Fast</span></button>
     <button class="tab" data-p="openai">OpenAI Whisper<br><span style="font-size:10px;font-weight:400">Reliable · Paid</span></button>
   </div>
-  <div class="row2">
+  <div class="row2" id="keyRow">
     <input type="password" id="apiKey" placeholder="API key…" autocomplete="off" spellcheck="false">
     <button class="icon-btn" id="peekBtn">👁</button>
   </div>
@@ -1399,6 +1410,46 @@ document.getElementById('headerLogout').onclick = () => {
   showAuth();
 };
 
+// ── Google sign-in (shown only when the server has a client id configured) ────
+async function handleGoogleCredential(resp) {
+  const errEl = document.getElementById('authErr');
+  errEl.classList.remove('show');
+  try {
+    const r = await fetch('/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: resp.credential }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Google sign-in failed.');
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(EMAIL_KEY, data.email);
+    showApp(data.email);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  }
+}
+
+fetch('/auth/config').then(r => r.json()).then(cfg => {
+  if (!cfg.google_client_id) return;
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({
+      client_id: cfg.google_client_id,
+      callback: handleGoogleCredential,
+    });
+    google.accounts.id.renderButton(document.getElementById('googleBtnWrap'), {
+      theme: 'outline', size: 'large', width: 308, text: 'continue_with',
+    });
+    document.getElementById('authDivider').classList.remove('hidden');
+    document.getElementById('googleBtnWrap').classList.remove('hidden');
+  };
+  document.head.appendChild(s);
+}).catch(() => {});
+
 checkAuth();
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -1441,6 +1492,7 @@ document.querySelectorAll('#providerTabs .tab').forEach(btn => {
     selectedProv = btn.dataset.p;
     document.getElementById('keyHint').innerHTML = HINTS[selectedProv];
     apiKeyEl.value = localStorage.getItem('srt_api_key_' + selectedProv) || '';
+    refreshKeyRow();
     updateBtn();
   });
 });
@@ -1460,8 +1512,19 @@ apiKeyEl.addEventListener('input', () => {
   updateBtn();
 });
 
+// Per-provider server-side keys: when the server has a key, hide the input entirely
+let serverKeys = { elevenlabs: false, groq: false, openai: false };
+
+function refreshKeyRow() {
+  const hasServer = !!serverKeys[selectedProv];
+  document.getElementById('keyRow').style.display  = hasServer ? 'none' : '';
+  document.getElementById('keyHint').style.display = hasServer ? 'none' : '';
+}
+
 fetch('/env-key').then(r => r.json()).then(d => {
-  if (d.elevenlabs || d.groq || d.openai) { apiKeyEl.placeholder = '(server key configured)'; updateBtn(); }
+  serverKeys = d;
+  refreshKeyRow();
+  updateBtn();
 }).catch(() => {});
 
 // ── File upload ───────────────────────────────────────────────────────────────
@@ -1816,7 +1879,7 @@ document.querySelectorAll('input[name="capMode"]').forEach(radio => {
 
 // ── Generate ──────────────────────────────────────────────────────────────────
 function updateBtn() {
-  const hasKey  = apiKeyEl.value.trim().length > 0 || apiKeyEl.placeholder.includes('server key');
+  const hasKey  = apiKeyEl.value.trim().length > 0 || !!serverKeys[selectedProv];
   const hasFile = selectedFile !== null;
   document.getElementById('genBtn').disabled = !(hasKey && hasFile);
 }
@@ -1836,7 +1899,7 @@ async function doTranscribe() {
   const fd = new FormData();
   fd.append('file',              selectedFile);
   fd.append('provider',          selectedProv);
-  fd.append('api_key',           apiKeyEl.value.trim());
+  fd.append('api_key',           serverKeys[selectedProv] ? '' : apiKeyEl.value.trim());
   fd.append('language',          selectedLang);
   fd.append('silence_threshold', silenceSlider.value);
   fd.append('max_chars',         charsSlider.value);
