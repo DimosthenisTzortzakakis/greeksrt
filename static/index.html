@@ -1941,6 +1941,14 @@ dropZone.addEventListener('drop',      e => { e.preventDefault(); dropZone.class
 document.getElementById('fpRm').addEventListener('click', () => { selectedFile = null; fileInput.value = ''; document.getElementById('filePill').classList.remove('show'); updateBtn(); });
 
 function setFile(f) {
+  const MAX_UPLOAD_MB = 25;
+  if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+    const box = document.getElementById('errBox');
+    box.textContent = `"${f.name}" is ${fmtBytes(f.size)} — the limit is ${MAX_UPLOAD_MB} MB. ` +
+      `Tip: for video files, export/extract the audio only (MP3) — it's much smaller and transcribes the same.`;
+    box.classList.add('show');
+    return;
+  }
   selectedFile = f;
   document.getElementById('fpName').textContent = f.name;
   document.getElementById('fpSize').textContent = fmtBytes(f.size);
@@ -2375,7 +2383,12 @@ async function doTranscribe() {
     stopProgressLines();
     hide('progressCard');
     const box = document.getElementById('errBox');
-    box.textContent = 'Error: ' + err.message;
+    let msg = err.message || '';
+    if (!msg || /failed to fetch|load failed|networkerror/i.test(msg)) {
+      msg = 'The connection dropped while uploading. This usually means the file is too large ' +
+            '(limit: 25 MB) or the server was waking up — wait a few seconds and try again.';
+    }
+    box.textContent = 'Error: ' + msg;
     box.classList.add('show');
   } finally {
     updateBtn();

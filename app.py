@@ -233,13 +233,19 @@ async def transcribe(
     if ext not in SUPPORTED_EXT:
         raise HTTPException(400, f"Unsupported file type '{ext}'.")
 
-    content = await file.read()
-    if len(content) > MAX_MB * 1024 * 1024:
-        raise HTTPException(413, f"File too large (max {MAX_MB} MB).")
-
+    # Stream to disk in chunks — never hold the whole upload in RAM
+    # (the free 512 MB instance gets OOM-killed by large MP4s otherwise)
+    limit = MAX_MB * 1024 * 1024
+    size = 0
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-        tmp.write(content)
         tmp_path = tmp.name
+        while chunk := await file.read(1024 * 1024):
+            size += len(chunk)
+            if size > limit:
+                tmp.close()
+                os.unlink(tmp_path)
+                raise HTTPException(413, f"File too large (max {MAX_MB} MB).")
+            tmp.write(chunk)
 
     try:
         if provider == "elevenlabs":
