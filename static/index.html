@@ -45,7 +45,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Inter', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
@@ -63,27 +63,20 @@ body {
 .ambient i {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
   will-change: transform;
 }
 .ambient i:nth-child(1) {
   width: 55vmax; height: 55vmax; top: -22vmax; left: -14vmax;
-  background: radial-gradient(circle, rgba(0,113,227,.20), rgba(88,86,214,.10) 55%, transparent 72%);
-  animation: amb-a 26s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(0,113,227,.38), rgba(88,86,214,.20) 55%, transparent 72%);
 }
 .ambient i:nth-child(2) {
   width: 48vmax; height: 48vmax; bottom: -20vmax; right: -12vmax;
-  background: radial-gradient(circle, rgba(50,173,230,.18), rgba(0,113,227,.08) 55%, transparent 72%);
-  animation: amb-b 32s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(50,173,230,.34), rgba(0,113,227,.16) 55%, transparent 72%);
 }
 .ambient i:nth-child(3) {
-  width: 34vmax; height: 34vmax; top: 30%; left: 58%;
-  background: radial-gradient(circle, rgba(175,82,222,.10), transparent 65%);
-  animation: amb-c 38s ease-in-out infinite alternate;
+  width: 38vmax; height: 38vmax; top: 26%; left: 56%;
+  background: radial-gradient(circle, rgba(175,82,222,.22), rgba(255,55,95,.08) 55%, transparent 68%);
 }
-@keyframes amb-a { to { transform: translate(7vmax, 6vmax) scale(1.1); } }
-@keyframes amb-b { to { transform: translate(-6vmax, -7vmax) scale(1.07); } }
-@keyframes amb-c { to { transform: translate(-9vmax, 5vmax); } }
 
 .wrap { max-width: 660px; margin: 0 auto; }
 
@@ -146,19 +139,30 @@ h1 {
 
 /* ── Cards — liquid glass ── */
 .card {
-  background: rgba(255,255,255,.66);
-  backdrop-filter: blur(22px) saturate(1.7);
-  -webkit-backdrop-filter: blur(22px) saturate(1.7);
-  border: 1px solid rgba(255,255,255,.72);
+  background: rgba(255,255,255,.50);
+  backdrop-filter: blur(26px) saturate(1.9);
+  -webkit-backdrop-filter: blur(26px) saturate(1.9);
+  border: 1px solid rgba(255,255,255,.65);
   border-radius: var(--r-lg);
   padding: 20px;
   margin-bottom: 12px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow .25s, transform .25s ease, border-color .25s;
+  box-shadow:
+    0 1px 4px rgba(0,30,80,.06), 0 8px 32px rgba(0,30,80,.06),
+    inset 0 1px 0 rgba(255,255,255,.9);
+  transition: box-shadow .3s, border-color .3s;
 }
 .card:hover {
-  box-shadow: 0 6px 28px rgba(0,80,180,.10), 0 1px 4px rgba(0,0,0,.05);
-  border-color: rgba(255,255,255,.95);
+  box-shadow:
+    0 6px 28px rgba(0,80,180,.12), 0 1px 4px rgba(0,0,0,.05),
+    inset 0 1px 0 rgba(255,255,255,1);
+  border-color: rgba(255,255,255,.9);
+}
+
+/* Apple-spring entrance — cards rise in as they enter the viewport */
+.card.pre { opacity: 0; transform: translateY(22px) scale(.975); }
+.card.pre.in {
+  opacity: 1; transform: none;
+  transition: opacity .65s cubic-bezier(.32,.72,0,1), transform .65s cubic-bezier(.32,.72,0,1);
 }
 .card-title {
   font-size: 11px;
@@ -204,6 +208,7 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
 
 /* ── Provider tabs — segmented control ── */
 .tabs {
+  position: relative;
   display: flex;
   background: rgba(120,120,128,.10);
   border: 1px solid rgba(120,120,128,.08);
@@ -211,6 +216,19 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
   padding: 3px;
   gap: 3px;
   margin-bottom: 16px;
+}
+.tabs > *, .lang-tabs > * { position: relative; z-index: 1; }
+
+/* Sliding white pill — iOS segmented control */
+.seg-glider {
+  position: absolute;
+  top: 3px; bottom: 3px; left: 0;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10), 0 3px 8px rgba(0,0,0,.06);
+  transition: transform .35s cubic-bezier(.3,.9,.35,1), width .35s cubic-bezier(.3,.9,.35,1), opacity .2s;
+  z-index: 0 !important;
+  pointer-events: none;
 }
 .tab {
   flex: 1;
@@ -227,9 +245,8 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
   transition: background .15s, color .15s, box-shadow .15s;
 }
 .tab.on {
-  background: var(--surface);
+  background: transparent;
   color: var(--text);
-  box-shadow: var(--shadow-xs);
 }
 .tab:hover:not(.on) { color: var(--text-2); }
 
@@ -290,13 +307,39 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
 .slabel { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 500; color: var(--text); }
 .sval { color: var(--accent); font-weight: 700; font-size: 13px; }
 .sdesc { font-size: 12px; color: var(--muted); line-height: 1.4; }
-input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+/* Apple-style sliders: thin filled track, big white knob */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(120,120,128,.16); /* repainted with fill % by JS */
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 0.5px 4px rgba(0,0,0,.12), 0 6px 13px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.02);
+  transition: transform .15s cubic-bezier(.34,1.4,.64,1);
+}
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type=range]::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; border: none;
+  box-shadow: 0 0.5px 4px rgba(0,0,0,.12), 0 6px 13px rgba(0,0,0,.12);
+}
 
 /* Language tabs — same segmented style */
 .lang-tabs {
+  position: relative;
   display: flex;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: rgba(120,120,128,.10);
+  border: 1px solid rgba(120,120,128,.08);
   border-radius: var(--r-sm);
   padding: 3px;
   gap: 3px;
@@ -315,17 +358,37 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   text-align: center;
   transition: background .15s, color .15s, box-shadow .15s;
 }
-.lang-tab.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+.lang-tab.on { background: transparent; color: var(--text); }
 .lang-tab:hover:not(.on) { color: var(--text-2); }
 
 /* ── Checkboxes ── */
 .checks { display: grid; gap: 12px; }
 .check-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
 .check-row input[type=checkbox] {
-  width: 16px; height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer; margin-top: 1px; flex-shrink: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(120,120,128,.45);
+  background: rgba(255,255,255,.85);
+  cursor: pointer; margin-top: 0; flex-shrink: 0;
+  display: grid; place-content: center;
+  transition: background .18s, border-color .18s, transform .15s cubic-bezier(.34,1.4,.64,1);
 }
+.check-row input[type=checkbox]::before {
+  content: '';
+  width: 11px; height: 11px;
+  transform: scale(0);
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+  background: #fff;
+  clip-path: polygon(14% 44%, 0 60%, 40% 100%, 100% 18%, 84% 5%, 38% 70%);
+}
+.check-row input[type=checkbox]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.check-row input[type=checkbox]:checked::before { transform: scale(1); }
+.check-row input[type=checkbox]:active { transform: scale(.9); }
 .check-label { font-size: 13px; font-weight: 500; color: var(--text); }
 .check-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
@@ -343,8 +406,27 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   align-items: flex-start;
   gap: 9px;
 }
-.radio-opt input[type=radio] { accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
-.radio-opt.selected { border-color: var(--accent); background: var(--accent-lt); box-shadow: 0 0 0 1px rgba(0,113,227,.2); }
+.radio-opt input[type=radio] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 19px; height: 19px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(120,120,128,.45);
+  background: rgba(255,255,255,.9);
+  margin-top: 1px; flex-shrink: 0; cursor: pointer;
+  display: grid; place-content: center;
+  transition: border-color .18s, background .18s;
+}
+.radio-opt input[type=radio]::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+.radio-opt input[type=radio]:checked { background: var(--accent); border-color: var(--accent); }
+.radio-opt input[type=radio]:checked::before { transform: scale(1); }
+.radio-opt.selected { border-color: var(--accent); background: rgba(0,113,227,.07); box-shadow: 0 0 0 1px rgba(0,113,227,.25), 0 2px 12px rgba(0,113,227,.10); }
 .radio-opt-label { font-size: 13px; font-weight: 600; color: var(--text); }
 .radio-opt-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
@@ -595,11 +677,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   box-shadow: var(--shadow-sm);
 }
 
-/* Main cards ease in on first paint */
-.wrap > .card { animation: card-in .4s cubic-bezier(.21,1.02,.55,1) backwards; }
-.wrap > .card:nth-child(3) { animation-delay: .04s; }
-.wrap > .card:nth-child(4) { animation-delay: .08s; }
-.wrap > .card:nth-child(5) { animation-delay: .12s; }
 
 .sub-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
 .sub-num { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 22px; }
@@ -919,8 +996,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   position: absolute;
   width: 60vmax; height: 60vmax;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: .5;
+  opacity: .6;
   pointer-events: none;
   will-change: transform;
 }
@@ -1731,6 +1807,54 @@ fetch('/auth/config').then(r => r.json()).then(cfg => {
 }).catch(() => {});
 
 checkAuth();
+
+// ── Apple-style UI behaviors ──────────────────────────────────────────────────
+
+// Slider fill: paint the blue progress portion of every range input
+function paintRange(el) {
+  const min = parseFloat(el.min) || 0, max = parseFloat(el.max) || 100;
+  const p = ((parseFloat(el.value) - min) / (max - min)) * 100;
+  el.style.background = `linear-gradient(to right, var(--accent) ${p}%, rgba(120,120,128,.16) ${p}%)`;
+}
+function paintAllRanges() { document.querySelectorAll('input[type=range]').forEach(paintRange); }
+document.addEventListener('input', e => { if (e.target.type === 'range') paintRange(e.target); });
+paintAllRanges();
+
+// Sliding segmented control pill
+function initSegmented(track) {
+  if (track.querySelector('.seg-glider')) return;
+  const g = document.createElement('span');
+  g.className = 'seg-glider';
+  track.prepend(g);
+  const update = () => {
+    const on = track.querySelector('.on');
+    if (!on) { g.style.opacity = '0'; return; }
+    g.style.opacity = '1';
+    g.style.width = on.offsetWidth + 'px';
+    g.style.transform = `translateX(${on.offsetLeft}px)`;
+  };
+  track.addEventListener('click', () => setTimeout(update, 0));
+  new ResizeObserver(update).observe(track);
+  update();
+}
+document.querySelectorAll('.tabs, .lang-tabs').forEach(initSegmented);
+
+// Cards rise in as they enter the viewport (Apple spring)
+const _reveal = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting) {
+      en.target.classList.add('in');
+      _reveal.unobserve(en.target);
+      // Stagger delay is only for the entrance — clear it so hover stays snappy
+      setTimeout(() => { en.target.style.transitionDelay = ''; }, 900);
+    }
+  });
+}, { threshold: 0.06 });
+document.querySelectorAll('.wrap > .card').forEach((c, i) => {
+  c.style.transitionDelay = (i % 4) * 60 + 'ms';
+  c.classList.add('pre');
+  _reveal.observe(c);
+});
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let selectedFile = null;
@@ -2666,6 +2790,7 @@ function syncStyleControls() {
   $('ac-bgPad').value = st.bgPad;                 $('ac-bgPadVal').textContent = st.bgPad + 'px';
   $('ac-bgRadius').value = st.bgRadius;           $('ac-bgRadiusVal').textContent = st.bgRadius + 'px';
   $('ac-posY').value = st.posY;                   $('ac-posYVal').textContent = st.posY + '%';
+  paintAllRanges();
 }
 
 function applyPreset(name) {
