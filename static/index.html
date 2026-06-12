@@ -52,33 +52,113 @@ body {
   padding: 5rem 1rem 6rem;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── Ambient color field — the whole app floats on soft light ── */
+.ambient {
+  position: fixed; inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ambient i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+.ambient i:nth-child(1) {
+  width: 55vmax; height: 55vmax; top: -22vmax; left: -14vmax;
+  background: radial-gradient(circle, rgba(0,113,227,.20), rgba(88,86,214,.10) 55%, transparent 72%);
+  animation: amb-a 26s ease-in-out infinite alternate;
+}
+.ambient i:nth-child(2) {
+  width: 48vmax; height: 48vmax; bottom: -20vmax; right: -12vmax;
+  background: radial-gradient(circle, rgba(50,173,230,.18), rgba(0,113,227,.08) 55%, transparent 72%);
+  animation: amb-b 32s ease-in-out infinite alternate;
+}
+.ambient i:nth-child(3) {
+  width: 34vmax; height: 34vmax; top: 30%; left: 58%;
+  background: radial-gradient(circle, rgba(175,82,222,.10), transparent 65%);
+  animation: amb-c 38s ease-in-out infinite alternate;
+}
+@keyframes amb-a { to { transform: translate(7vmax, 6vmax) scale(1.1); } }
+@keyframes amb-b { to { transform: translate(-6vmax, -7vmax) scale(1.07); } }
+@keyframes amb-c { to { transform: translate(-9vmax, 5vmax); } }
+
 .wrap { max-width: 660px; margin: 0 auto; }
 
+/* ── Hero ── */
+.hero { text-align: center; margin-bottom: 2rem; }
 h1 {
   text-align: center;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: -.04em;
+  letter-spacing: -.045em;
   color: var(--text);
   margin-bottom: 6px;
+}
+.h1-accent {
+  background: linear-gradient(95deg, #0071E3, #32ADE6 60%, #5856D6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .tagline {
   text-align: center;
   color: var(--muted);
   font-size: 13px;
-  margin-bottom: 2rem;
+  margin-bottom: 14px;
   font-weight: 400;
 }
+.hero-wave {
+  display: flex; align-items: center; justify-content: center;
+  gap: 3px; height: 26px; margin-bottom: 14px;
+}
+.hero-wave span {
+  width: 3px; border-radius: 2px;
+  background: linear-gradient(180deg, #32ADE6, #0071E3);
+  opacity: .8;
+  animation: hero-wave 2.6s ease-in-out infinite;
+  height: 30%;
+}
+.hero-wave span:nth-child(5n+1) { animation-delay: -.2s; }
+.hero-wave span:nth-child(5n+2) { animation-delay: -.9s; }
+.hero-wave span:nth-child(5n+3) { animation-delay: -1.6s; }
+.hero-wave span:nth-child(5n+4) { animation-delay: -.5s; }
+.hero-wave span:nth-child(5n)   { animation-delay: -1.2s; }
+.hero-wave span:nth-child(7n)   { animation-delay: -2s; }
+.hero-wave span:nth-child(11n)  { animation-delay: -1.4s; }
+@keyframes hero-wave {
+  0%, 100% { height: 22%; opacity: .45; }
+  50%      { height: 95%; opacity: .9; }
+}
+.hero-chips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.hero-chip {
+  font-size: 11.5px; font-weight: 600; color: var(--text-2);
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.75);
+  box-shadow: var(--shadow-xs);
+  border-radius: 100px;
+  padding: 5px 12px;
+}
 
-/* ── Cards ── */
+/* ── Cards — liquid glass ── */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
+  background: rgba(255,255,255,.66);
+  backdrop-filter: blur(22px) saturate(1.7);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: var(--r-lg);
   padding: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow .2s;
+  transition: box-shadow .25s, transform .25s ease, border-color .25s;
+}
+.card:hover {
+  box-shadow: 0 6px 28px rgba(0,80,180,.10), 0 1px 4px rgba(0,0,0,.05);
+  border-color: rgba(255,255,255,.95);
 }
 .card-title {
   font-size: 11px;
@@ -125,8 +205,8 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
 /* ── Provider tabs — segmented control ── */
 .tabs {
   display: flex;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: rgba(120,120,128,.10);
+  border: 1px solid rgba(120,120,128,.08);
   border-radius: var(--r-sm);
   padding: 3px;
   gap: 3px;
@@ -156,15 +236,19 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
 /* ── Upload ── */
 .drop {
   position: relative;
-  border: 1.5px dashed var(--border-md);
+  border: 1.5px dashed rgba(0,113,227,.35);
   border-radius: var(--r);
   padding: 36px 20px;
   text-align: center;
   cursor: pointer;
-  transition: border-color .2s, background .2s, transform .15s ease;
-  background: var(--surface2);
+  transition: border-color .2s, background .2s, transform .15s ease, box-shadow .2s;
+  background: rgba(255,255,255,.45);
 }
-.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-lt); }
+.drop:hover, .drop.over {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+  box-shadow: inset 0 0 0 1px rgba(0,113,227,.15), 0 4px 20px rgba(0,113,227,.10);
+}
 .drop.over { transform: scale(1.012); }
 .drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 .drop-icon { font-size: 2.2rem; margin-bottom: 10px; transition: transform .2s ease; }
@@ -294,6 +378,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
 /* ── Generate button ── */
 .gen-btn {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   background: linear-gradient(180deg, #0077ED, #0071E3);
   border: none;
@@ -308,6 +394,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   margin-top: 6px;
   letter-spacing: -.01em;
 }
+.gen-btn::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; width: 60%;
+  left: -80%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35) 50%, transparent);
+  transform: skewX(-20deg);
+  transition: none;
+}
+.gen-btn:hover:not(:disabled)::after { animation: sheen .9s ease; }
+@keyframes sheen { to { left: 130%; } }
 .gen-btn:hover:not(:disabled) {
   background: linear-gradient(180deg, #1683F0, #0077ED);
   box-shadow: 0 4px 16px rgba(0,113,227,.30);
@@ -390,8 +486,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
 /* ── Audio Player ── */
 .player-bar {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,.66);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,.72);
   border-radius: var(--r);
   padding: 12px 16px;
   margin-bottom: 10px;
@@ -479,8 +577,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 .sub-list { display: flex; flex-direction: column; gap: 2px; }
 
 .sub-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(255,255,255,.85);
   border-left: 3px solid transparent;
   border-radius: var(--r-sm);
   padding: 10px 14px 10px 11px;
@@ -925,6 +1023,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=GFS+Neohellenic:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;700&family=Montserrat:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Ubuntu:ital,wght@0,400;0,700;1,400&family=Raleway:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=Exo+2:ital,wght@0,400;0,700;1,400&subset=greek&display=swap" rel="stylesheet">
 </head>
 <body>
+<div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <!-- Auth screen (shown when not authenticated) -->
 <div id="authScreen">
@@ -960,8 +1059,18 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
 <div class="wrap">
 
-<h1>Greek SRT Generator</h1>
-<p class="tagline">Transcribe · Edit · Sync · Download</p>
+<div class="hero">
+  <h1>Greek <span class="h1-accent">SRT</span> Generator</h1>
+  <p class="tagline">Transcribe · Edit · Sync · Download</p>
+  <div class="hero-wave" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="hero-chips">
+    <span class="hero-chip">⚡ Word-level sync</span>
+    <span class="hero-chip">🎙 Speaker detection</span>
+    <span class="hero-chip">🎬 Styled export</span>
+  </div>
+</div>
 
 <!-- Provider & Key -->
 <div class="card">
