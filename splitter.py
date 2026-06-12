@@ -12,6 +12,23 @@ GREEK_NO_END = frozenset({
     'όταν', 'οταν', 'μόλις', 'μολις', 'ενώ', 'ενω', 'καθώς', 'καθως',
     'να', 'θα', 'ας', 'μη', 'μην',
     'που', 'οπού', 'οπου', 'όπου', 'όπως', 'οπως',
+    # degree/quantity adverbs that bind to the word AFTER them ("πιο μικρά")
+    'πιο', 'πολύ', 'πολυ', 'τόσο', 'τοσο', 'λίγο', 'λιγο',
+    'αρκετά', 'αρκετα', 'σχεδόν', 'σχεδον', 'εντελώς', 'εντελως',
+})
+
+# Splitting BEFORE these words is GOOD — they start a new clause/phrase
+# ("που κατάφερε…", "για να μεγαλώσει", "όταν ήρθε…")
+GREEK_CLAUSE_START = frozenset({
+    'που', 'για', 'όταν', 'οταν', 'αν', 'εάν', 'εαν', 'επειδή', 'επειδη',
+    'ότι', 'οτι', 'πως', 'και', 'αλλά', 'αλλα', 'ενώ', 'ενω',
+    'καθώς', 'καθως', 'μόλις', 'μολις', 'αφού', 'αφου', 'γιατί', 'γιατι',
+    'στο', 'στη', 'στην', 'στον', 'στις', 'στα', 'στους',
+    'με', 'από', 'απο', 'χωρίς', 'χωρις',
+})
+ENGLISH_CLAUSE_START = frozenset({
+    'that', 'which', 'when', 'because', 'and', 'but', 'so',
+    'for', 'with', 'to', 'in', 'on', 'if', 'while',
 })
 
 # Never let these words be the LAST word of a subtitle (articles/prepositions alone look bad)
@@ -25,11 +42,10 @@ GREEK_NO_BREAK_AFTER = frozenset({
     'κάθε', 'καθε',
 })
 
-# Avoid starting a subtitle with pure particles / bare prepositions
+# Avoid starting a subtitle with pure particles (verb clitics).
+# Prepositions like "για/με/σε" are FINE starters — they open a new phrase.
 GREEK_NO_START = frozenset({
     'να', 'θα', 'ας', 'μη', 'μην',
-    'με', 'σε', 'για', 'ως', 'εως', 'προς', 'παρά', 'παρα',
-    'μέχρι', 'μεχρι', 'χωρίς', 'χωρις', 'κατά', 'κατα',
 })
 
 ENGLISH_NO_END  = frozenset({'and', 'but', 'or', 'nor', 'yet', 'so', 'because', 'since', 'that', 'if'})
@@ -64,6 +80,8 @@ def _split_score(words: List[Dict], idx: int, language: str, silence: float = 0.
     no_after = GREEK_NO_BREAK_AFTER if language != 'en' else ENGLISH_NO_AFTER
     no_start = GREEK_NO_START if language != 'en' else ENGLISH_NO_START
 
+    clause_start = GREEK_CLAUSE_START if language != 'en' else ENGLISH_CLAUSE_START
+
     score = 0
     if _ends_sentence(words[idx - 1]['word']):
         score += 100
@@ -71,6 +89,8 @@ def _split_score(words: List[Dict], idx: int, language: str, silence: float = 0.
         score += 25
     if silence >= 0.3:
         score += int(silence * 30)
+    if nxt in clause_start:
+        score += 40
 
     if prev in no_end:
         score -= 90
@@ -87,7 +107,11 @@ def _best_split_idx(words: List[Dict], language: str) -> int:
     mid = len(words) // 2
     best_idx, best_score = mid, -10000
 
-    for i in range(1, len(words)):
+    # Never leave a 1-word orphan on either side when avoidable
+    lo = 2 if len(words) >= 4 else 1
+    hi = len(words) - 1 if len(words) >= 4 else len(words)
+
+    for i in range(lo, hi):
         silence = _silence_before(words, i)
         score = _split_score(words, i, language, silence)
         score -= abs(i - mid) * 3  # prefer splits near the middle
@@ -212,6 +236,9 @@ def create_subtitles(
         else:
             final_groups.append(seg)
 
+    # ── Step 2b: absorb tiny fragments into a neighbour ───────────────────────
+    final_groups = _merge_tiny_groups(final_groups, max_chars, silence_threshold)
+
     # ── Step 3: build subtitle objects ────────────────────────────────────────
     subtitles: List[Dict] = []
     for group in final_groups:
@@ -233,6 +260,62 @@ def create_subtitles(
     subtitles = _merge_overlapping_speakers(subtitles)
 
     return subtitles
+
+
+def _group_text(group: List[Dict]) -> str:
+    return ' '.join((w.get('word') or w.get('text') or '') for w in group).strip()
+
+
+def _same_speaker(a: List[Dict], b: List[Dict]) -> bool:
+    sa, sb = a[0].get('speaker_id'), b[0].get('speaker_id')
+    return sa is None or sb is None or sa == sb
+
+
+def _merge_tiny_groups(
+    groups: List[List[Dict]],
+    max_chars: int,
+    silence_threshold: float,
+) -> List[List[Dict]]:
+    """
+    A 1-word / very short card ("χώρα") reads terribly. Glue it onto the
+    neighbour it most likely belongs to, as long as the result still fits
+    on two lines and there is no real pause between them.
+    """
+    min_len = max(8, max_chars // 4)
+    changed = True
+    while changed and len(groups) > 1:
+        changed = False
+        for i, g in enumerate(groups):
+            text = _group_text(g)
+            if len(g) > 1 and len(text) >= min_len:
+                continue
+
+            candidates = []
+            if i > 0:
+                prev = groups[i - 1]
+                gap = g[0]['start'] - prev[-1]['end']
+                combined = len(_group_text(prev)) + 1 + len(text)
+                if gap < silence_threshold and combined <= max_chars * 2 and _same_speaker(prev, g):
+                    candidates.append(('prev', combined))
+            if i + 1 < len(groups):
+                nxt = groups[i + 1]
+                gap = nxt[0]['start'] - g[-1]['end']
+                combined = len(text) + 1 + len(_group_text(nxt))
+                if gap < silence_threshold and combined <= max_chars * 2 and _same_speaker(g, nxt):
+                    candidates.append(('next', combined))
+
+            if not candidates:
+                continue
+            # Merge into whichever side stays shorter
+            side = min(candidates, key=lambda c: c[1])[0]
+            if side == 'prev':
+                groups[i - 1] = groups[i - 1] + g
+            else:
+                groups[i + 1] = g + groups[i + 1]
+            del groups[i]
+            changed = True
+            break
+    return groups
 
 
 def _merge_overlapping_speakers(subtitles: List[Dict]) -> List[Dict]:

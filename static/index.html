@@ -1229,14 +1229,6 @@ input[type=range]::-moz-range-thumb {
   <div class="checks">
 
     <label class="check-row">
-      <input type="checkbox" id="chkPunct" checked>
-      <div>
-        <div class="check-label">Remove . , ! &nbsp;<span style="color:var(--muted);font-size:12px">(keep ; only)</span></div>
-        <div class="check-desc">Subtitles read better without punctuation on screen</div>
-      </div>
-    </label>
-
-    <label class="check-row">
       <input type="checkbox" id="chkNums" checked>
       <div>
         <div class="check-label">Replace number words with digits</div>
@@ -1264,10 +1256,10 @@ input[type=range]::-moz-range-thumb {
       <div class="slabel" style="margin-bottom:6px">Capitalization</div>
       <div class="radio-opts">
         <label class="radio-opt" id="capOpt1">
-          <input type="radio" name="capMode" value="all">
+          <input type="radio" name="capMode" value="sentence">
           <div>
-            <div class="radio-opt-label">All first letters</div>
-            <div class="radio-opt-desc">Each subtitle starts with a capital</div>
+            <div class="radio-opt-label">Sentence periods</div>
+            <div class="radio-opt-desc">Keeps a . only where a long sentence truly ends — capital after it</div>
           </div>
         </label>
         <label class="radio-opt selected" id="capOpt2">
@@ -2194,11 +2186,11 @@ function processText(raw) {
     t = replaceSoundEffects(t);
   }
 
-  // 2. Punctuation removal
-  if (document.getElementById('chkPunct').checked) {
-    t = t.replace(/[.,،!]/g, '');
-    t = t.replace(/  +/g, ' ').trim();
-  }
+  // 2. Punctuation removal — commas/exclamations always go; periods survive only
+  //    in "sentence" mode (applyCapitalization decides which ones to keep)
+  const capMode = document.querySelector('input[name="capMode"]:checked').value;
+  t = t.replace(capMode === 'sentence' ? /[,،!]/g : /[.,،!]/g, '');
+  t = t.replace(/  +/g, ' ').trim();
 
   // 3. Time expressions (before plain number replacement)
   if (document.getElementById('chkNums').checked && selectedLang !== 'en') {
@@ -2243,14 +2235,28 @@ function stripTonos(str) {
 
 function applyCapitalization() {
   const mode = document.querySelector('input[name="capMode"]:checked').value;
+  // Sentence mode: a period survives only when it closes a LONG sentence
+  const MIN_SENTENCE_CHARS = 70;
+  let charsSinceBreak = 0;
+
   subtitles.forEach((sub, i) => {
     let text = sub.text; // already lowercased by processText
-    if (mode === 'all') {
-      // Every subtitle: capitalize first letter
-      text = text.charAt(0).toUpperCase() + text.slice(1);
-    } else if (mode === 'allcaps') {
+    if (mode === 'allcaps') {
       // Uppercase everything, strip accent marks
       text = stripTonos(text).toUpperCase();
+    } else if (mode === 'sentence') {
+      // Drop mid-card periods; keep a trailing one only if the sentence so far is long
+      const endsPeriod = /\.\s*$/.test(text);
+      text = text.replace(/\.(?=.)/g, '').replace(/\.\s*$/, '').replace(/  +/g, ' ').trim();
+      charsSinceBreak += text.length;
+      const prev = subtitles[i - 1];
+      const afterBreak = i === 0 || (prev && /[.;]\s*$/.test(prev.text.trimEnd()));
+      if (afterBreak) text = text.charAt(0).toUpperCase() + text.slice(1);
+      if (endsPeriod && charsSinceBreak >= MIN_SENTENCE_CHARS) {
+        text += '.';
+        charsSinceBreak = 0;
+      }
+      if (/;\s*$/.test(text)) charsSinceBreak = 0;
     } else {
       // 'after_q': capitalize only after a ; (Greek question mark), or first subtitle
       const prev = subtitles[i - 1];
@@ -2265,7 +2271,7 @@ function applyCapitalization() {
 document.querySelectorAll('input[name="capMode"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const val = document.querySelector('input[name="capMode"]:checked').value;
-    document.getElementById('capOpt1').classList.toggle('selected', val === 'all');
+    document.getElementById('capOpt1').classList.toggle('selected', val === 'sentence');
     document.getElementById('capOpt2').classList.toggle('selected', val === 'after_q');
     document.getElementById('capOpt3').classList.toggle('selected', val === 'allcaps');
     if (!subtitles.length) return;
@@ -2278,7 +2284,7 @@ document.querySelectorAll('input[name="capMode"]').forEach(radio => {
 });
 
 // Re-apply when any text processing checkbox changes
-['chkPunct', 'chkNums', 'chkSwear', 'chkSfx'].forEach(id => {
+['chkNums', 'chkSwear', 'chkSfx'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => {
     if (!subtitles.length) return;
     const sy2 = window.scrollY;
