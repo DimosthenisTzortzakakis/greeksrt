@@ -161,12 +161,35 @@ input[type=text]:focus, input[type=password]:focus { border-color: var(--focus);
   padding: 36px 20px;
   text-align: center;
   cursor: pointer;
-  transition: border-color .2s, background .2s;
+  transition: border-color .2s, background .2s, transform .15s ease;
   background: var(--surface2);
 }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-lt); }
+.drop.over { transform: scale(1.012); }
 .drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.drop-icon { font-size: 2.2rem; margin-bottom: 10px; }
+.drop-icon { font-size: 2.2rem; margin-bottom: 10px; transition: transform .2s ease; }
+.drop:hover .drop-icon, .drop.over .drop-icon { transform: scale(1.08) translateY(-2px); }
+
+/* Equalizer bars — used in drop zone hover + progress */
+.eq {
+  display: inline-flex; align-items: flex-end; gap: 3px;
+  height: 28px;
+}
+.eq span {
+  width: 4px; border-radius: 2px;
+  background: var(--accent);
+  animation: eq-bounce 1s ease-in-out infinite;
+}
+.eq span:nth-child(1) { height: 40%; animation-delay: -.9s; }
+.eq span:nth-child(2) { height: 75%; animation-delay: -.7s; }
+.eq span:nth-child(3) { height: 100%; animation-delay: -.5s; }
+.eq span:nth-child(4) { height: 60%; animation-delay: -.3s; }
+.eq span:nth-child(5) { height: 85%; animation-delay: -.6s; }
+.eq span:nth-child(6) { height: 45%; animation-delay: -.1s; }
+@keyframes eq-bounce {
+  0%, 100% { transform: scaleY(.45); }
+  50%      { transform: scaleY(1); }
+}
 .drop-label { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .drop-hint { font-size: 12px; color: var(--muted); }
 
@@ -260,17 +283,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   width: 22px; height: 22px;
   left: 3px; top: 3px;
   background: white;
-  border-radius: 50%;
-  transition: transform .22s cubic-bezier(.4,0,.2,1);
+  border-radius: 11px;
+  transition: transform .3s cubic-bezier(.34,1.4,.64,1), width .15s ease;
   box-shadow: 0 1px 4px rgba(0,0,0,.18);
 }
+.tgl-track:active::before { width: 27px; }
 .tgl input:checked + .tgl-track { background: var(--accent); }
 .tgl input:checked + .tgl-track::before { transform: translateX(20px); }
+.tgl input:checked + .tgl-track:active::before { transform: translateX(15px); }
 
 /* ── Generate button ── */
 .gen-btn {
   width: 100%;
-  background: var(--accent);
+  background: linear-gradient(180deg, #0077ED, #0071E3);
   border: none;
   border-radius: var(--r);
   color: white;
@@ -279,15 +304,58 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   font-size: 15px;
   font-weight: 600;
   padding: 14px;
-  transition: background .15s, box-shadow .15s;
+  transition: background .15s, box-shadow .15s, transform .1s ease;
   margin-top: 6px;
   letter-spacing: -.01em;
 }
 .gen-btn:hover:not(:disabled) {
-  background: var(--accent2);
+  background: linear-gradient(180deg, #1683F0, #0077ED);
   box-shadow: 0 4px 16px rgba(0,113,227,.30);
 }
+.gen-btn:active:not(:disabled) { transform: scale(.98); }
 .gen-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+/* ── Press feedback — every tappable control compresses slightly ── */
+.tab:active, .lang-tab:active, .auth-submit:active,
+.sticky-dl:active, .export-btn:active, .header-logout:active,
+.icon-btn:active, .anim-tab:active, .radio-opt:active { transform: scale(.97); }
+.tab, .lang-tab, .auth-submit, .sticky-dl, .export-btn,
+.header-logout, .icon-btn, .anim-tab, .radio-opt { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 560px) {
+  body { padding: 4.2rem .75rem 7rem; font-size: 15px; }
+  h1 { font-size: 1.45rem; }
+  .card { padding: 16px; border-radius: var(--r); }
+  #appHeader { padding: 0 16px; height: 48px; }
+  .header-user { max-width: 130px; }
+
+  /* Provider tabs: stack vertically for fat-finger comfort */
+  .tabs { flex-direction: column; }
+  .tab { padding: 11px 8px; }
+
+  .radio-opts { flex-direction: column; }
+  .drop { padding: 28px 14px; }
+
+  /* Bigger touch targets */
+  .lang-tab { padding: 10px 7px; font-size: 13px; }
+  input[type=range] { height: 28px; }
+  .gen-btn { padding: 15px; font-size: 16px; }
+  .auth-card { padding: 32px 24px 28px; }
+
+  /* Sticky bar: keep the hint out, button full width */
+  .sticky-info { display: none; }
+  .sticky-dl { width: 100%; padding: 13px; font-size: 15px; }
+  .sticky-bar { padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+
+  /* Editor cards a touch tighter */
+  .sub-card { padding: 9px 11px 9px 9px; }
+  .player-bar { flex-wrap: wrap; gap: 8px; }
+}
 
 .err-box {
   display: none;
@@ -314,7 +382,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   margin: 0 auto 14px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.progress-msg { color: var(--text-2); font-size: 13px; font-weight: 500; }
+.progress-eq { margin: 0 auto 16px; height: 36px; }
+.progress-eq span { width: 5px; }
+.progress-msg { color: var(--text-2); font-size: 13px; font-weight: 500; transition: opacity .25s; }
+.progress-msg.swap { opacity: 0; }
 .progress-sub { margin-top: 5px; font-size: 12px; color: var(--muted); }
 
 /* ── Audio Player ── */
@@ -413,13 +484,24 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   border-left: 3px solid transparent;
   border-radius: var(--r-sm);
   padding: 10px 14px 10px 11px;
-  transition: border-color .15s, border-left-color .15s, box-shadow .15s;
+  transition: border-color .25s, border-left-color .25s, box-shadow .25s, background .25s, transform .25s ease;
   scroll-margin-top: 120px;
   box-shadow: var(--shadow-xs);
 }
 .sub-card:hover { box-shadow: var(--shadow-sm); }
 .sub-card:focus-within { border-color: rgba(0,113,227,.4); box-shadow: 0 0 0 3px rgba(0,113,227,.10); }
-.sub-card.playing { border-left-color: var(--accent); background: rgba(0,113,227,.025); }
+.sub-card.playing {
+  border-left-color: var(--accent);
+  background: rgba(0,113,227,.025);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Main cards ease in on first paint */
+.wrap > .card { animation: card-in .4s cubic-bezier(.21,1.02,.55,1) backwards; }
+.wrap > .card:nth-child(3) { animation-delay: .04s; }
+.wrap > .card:nth-child(4) { animation-delay: .08s; }
+.wrap > .card:nth-child(5) { animation-delay: .12s; }
 
 .sub-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
 .sub-num { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 22px; }
@@ -498,6 +580,30 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   padding: 10px 28px; transition: background .15s, box-shadow .15s;
 }
 .sticky-dl:hover { background: #18874A; box-shadow: 0 3px 10px rgba(28,155,80,.3); }
+
+/* ── Caption presets ── */
+.preset-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.preset-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: #17171A;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  color: #B8B8BD;
+  cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  padding: 12px 6px 9px;
+  transition: border-color .15s, transform .1s ease, box-shadow .15s;
+}
+.preset-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.preset-chip:active { transform: scale(.96); }
+.preset-chip.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: #fff; }
+.preset-demo { font-size: 19px; line-height: 1.25; }
+@media (max-width: 560px) { .preset-row { grid-template-columns: repeat(3, 1fr); } }
 
 /* ── Animated Export Card ── */
 #animExportCard { display: none; }
@@ -676,7 +782,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 #appHeader.hidden { display: none; }
 .header-logo {
   font-size: 15px; font-weight: 700;
-  color: var(--text); letter-spacing: -.03em;
+  letter-spacing: -.03em;
+  background: linear-gradient(92deg, #1D1D1F 30%, #0071E3 80%, #32ADE6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .header-spacer { flex: 1; }
 .header-user {
@@ -701,21 +811,59 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
   z-index: 8000;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
+  overflow: hidden;
 }
 #authScreen.hidden { display: none; }
 
+/* Animated gradient mesh — the one loud brand moment */
+#authScreen::before, #authScreen::after {
+  content: '';
+  position: absolute;
+  width: 60vmax; height: 60vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .5;
+  pointer-events: none;
+  will-change: transform;
+}
+#authScreen::before {
+  background: radial-gradient(circle at 30% 30%, rgba(0,113,227,.35), rgba(88,86,214,.18) 55%, transparent 70%);
+  top: -25vmax; left: -18vmax;
+  animation: mesh-a 18s ease-in-out infinite alternate;
+}
+#authScreen::after {
+  background: radial-gradient(circle at 70% 70%, rgba(50,173,230,.30), rgba(0,113,227,.14) 55%, transparent 70%);
+  bottom: -28vmax; right: -20vmax;
+  animation: mesh-b 22s ease-in-out infinite alternate;
+}
+@keyframes mesh-a { to { transform: translate(9vmax, 7vmax) scale(1.12); } }
+@keyframes mesh-b { to { transform: translate(-8vmax, -6vmax) scale(1.08); } }
+
 .auth-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  position: relative;
+  background: rgba(255,255,255,.86);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,.7);
   border-radius: var(--r-lg);
   padding: 40px 36px 36px;
   width: 100%; max-width: 380px;
   box-shadow: var(--shadow-lg);
+  animation: card-in .45s cubic-bezier(.21,1.02,.55,1) both;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to   { opacity: 1; transform: none; }
 }
 .auth-wordmark {
   font-size: 22px; font-weight: 700;
-  color: var(--text); letter-spacing: -.04em;
+  letter-spacing: -.04em;
   margin-bottom: 4px;
+  background: linear-gradient(92deg, #1D1D1F 20%, #0071E3 75%, #32ADE6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  width: fit-content;
 }
 .auth-tagline { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
 .auth-heading { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 22px; }
@@ -962,7 +1110,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
 <!-- Progress -->
 <div class="card progress-card" id="progressCard">
-  <div class="spinner"></div>
+  <div class="eq progress-eq"><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <div class="progress-msg" id="progressMsg">Transcribing…</div>
   <div class="progress-sub">Usually 10–90 seconds depending on file length.</div>
 </div>
@@ -1005,6 +1153,29 @@ input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
   <!-- ── Style Panel ─────────────────────────────────────────────────── -->
   <div class="anim-panel on" id="anim-panel-style">
+
+    <!-- One-click style presets -->
+    <div class="preset-row" id="presetRow">
+      <button class="preset-chip" data-preset="clean">
+        <span class="preset-demo" style="font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)">Αα</span>Clean
+      </button>
+      <button class="preset-chip" data-preset="karaoke">
+        <span class="preset-demo" style="font-weight:800;color:#FFD700;-webkit-text-stroke:1px #000">Αα</span>Karaoke
+      </button>
+      <button class="preset-chip" data-preset="pill">
+        <span class="preset-demo" style="font-weight:700;color:#fff;background:#000;border-radius:5px;padding:0 5px">Αα</span>Pill
+      </button>
+      <button class="preset-chip" data-preset="capcut">
+        <span class="preset-demo" style="font-weight:900;color:#fff;-webkit-text-stroke:1.5px #000;letter-spacing:.5px">Αα</span>Bold
+      </button>
+      <button class="preset-chip" data-preset="lowerthird">
+        <span class="preset-demo" style="font-weight:500;color:#fff;background:rgba(0,0,0,.55);border-radius:3px;padding:0 6px">Αα</span>Lower&nbsp;third
+      </button>
+      <button class="preset-chip" data-preset="neon">
+        <span class="preset-demo" style="font-weight:800;color:#7DF9FF;text-shadow:0 0 6px #00E5FF">Αα</span>Neon
+      </button>
+    </div>
+
     <div class="ac-group">
 
       <!-- Font family -->
@@ -1884,6 +2055,34 @@ function updateBtn() {
   document.getElementById('genBtn').disabled = !(hasKey && hasFile);
 }
 
+const PROGRESS_LINES = [
+  'Listening to the audio…',
+  'Catching every Greek word…',
+  'Splitting sentences at clean points…',
+  'Syncing timestamps…',
+  'Almost there — polishing the cards…',
+];
+let progressTimer = null;
+
+function startProgressLines(firstLine) {
+  const el = document.getElementById('progressMsg');
+  el.textContent = firstLine;
+  let i = 0;
+  clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    el.classList.add('swap');
+    setTimeout(() => {
+      el.textContent = PROGRESS_LINES[i++ % PROGRESS_LINES.length];
+      el.classList.remove('swap');
+    }, 250);
+  }, 5000);
+}
+
+function stopProgressLines() {
+  clearInterval(progressTimer);
+  progressTimer = null;
+}
+
 async function doTranscribe() {
   if (!selectedFile) return;
   hide('editorWrap');
@@ -1891,10 +2090,10 @@ async function doTranscribe() {
   show('progressCard');
   show('stickyBar', false);
   document.getElementById('genBtn').disabled = true;
-  document.getElementById('progressMsg').textContent =
+  startProgressLines(
     selectedProv === 'elevenlabs' ? 'Transcribing with ElevenLabs Scribe…' :
     selectedProv === 'groq'       ? 'Transcribing with Groq Whisper…' :
-                                    'Transcribing with OpenAI Whisper…';
+                                    'Transcribing with OpenAI Whisper…');
 
   const fd = new FormData();
   fd.append('file',              selectedFile);
@@ -1935,10 +2134,12 @@ async function doTranscribe() {
 
     initAudio();
     renderEditor();
+    stopProgressLines();
     hide('progressCard');
     show('editorWrap');
     show('stickyBar');
   } catch (err) {
+    stopProgressLines();
     hide('progressCard');
     const box = document.getElementById('errBox');
     box.textContent = 'Error: ' + err.message;
@@ -2214,8 +2415,15 @@ function download() {
   URL.revokeObjectURL(url);
 }
 
-document.getElementById('dlBtn').addEventListener('click', download);
-document.getElementById('stickyDl').addEventListener('click', download);
+function downloadWithFeedback(btn) {
+  download();
+  const original = btn.textContent;
+  btn.textContent = '✓ Saved';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1400);
+}
+document.getElementById('dlBtn').addEventListener('click', e => downloadWithFeedback(e.currentTarget));
+document.getElementById('stickyDl').addEventListener('click', e => downloadWithFeedback(e.currentTarget));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
@@ -2287,6 +2495,77 @@ const emphConfig = {
   animType:     'none',
 };
 
+// ── Style presets ─────────────────────────────────────────────────────────────
+const STYLE_PRESETS = {
+  clean: {
+    fontFamily: 'Roboto', fontSize: 72, textColor: '#ffffff', bold: true, italic: false,
+    letterSpacing: 0, outlineColor: '#000000', outlineWidth: 0,
+    shadowOn: true, shadowColor: '#000000', shadowBlur: 14,
+    bgOn: false, posY: 80,
+  },
+  karaoke: {
+    fontFamily: 'Montserrat', fontSize: 78, textColor: '#FFD700', bold: true, italic: false,
+    letterSpacing: 0, outlineColor: '#000000', outlineWidth: 6,
+    shadowOn: true, shadowColor: '#000000', shadowBlur: 8,
+    bgOn: false, posY: 78,
+  },
+  pill: {
+    fontFamily: 'Roboto', fontSize: 64, textColor: '#ffffff', bold: true, italic: false,
+    letterSpacing: 0, outlineColor: '#000000', outlineWidth: 0,
+    shadowOn: false,
+    bgOn: true, bgColor: '#000000', bgAlpha: 0.85, bgPad: 22, bgRadius: 16, posY: 80,
+  },
+  capcut: {
+    fontFamily: 'Oswald', fontSize: 92, textColor: '#ffffff', bold: true, italic: false,
+    letterSpacing: 1, outlineColor: '#000000', outlineWidth: 10,
+    shadowOn: true, shadowColor: '#000000', shadowBlur: 4,
+    bgOn: false, posY: 74,
+  },
+  lowerthird: {
+    fontFamily: 'Lato', fontSize: 56, textColor: '#ffffff', bold: false, italic: false,
+    letterSpacing: 0.5, outlineColor: '#000000', outlineWidth: 0,
+    shadowOn: false,
+    bgOn: true, bgColor: '#000000', bgAlpha: 0.55, bgPad: 14, bgRadius: 4, posY: 88,
+  },
+  neon: {
+    fontFamily: 'Exo 2', fontSize: 76, textColor: '#7DF9FF', bold: true, italic: false,
+    letterSpacing: 1.5, outlineColor: '#003C46', outlineWidth: 2,
+    shadowOn: true, shadowColor: '#00E5FF', shadowBlur: 28,
+    bgOn: false, posY: 80,
+  },
+};
+
+function syncStyleControls() {
+  const $ = id => document.getElementById(id);
+  const st = animStyle;
+  $('ac-fontFamily').value = st.fontFamily;
+  $('ac-fontSize').value = st.fontSize;          $('ac-fontSizeVal').textContent = st.fontSize + 'px';
+  $('ac-textColor').value = st.textColor;
+  $('ac-boldBtn').classList.toggle('on', st.bold);
+  $('ac-italicBtn').classList.toggle('on', st.italic);
+  $('ac-letterSpacing').value = st.letterSpacing; $('ac-letterSpacingVal').textContent = st.letterSpacing + 'px';
+  $('ac-outlineColor').value = st.outlineColor;
+  $('ac-outlineWidth').value = st.outlineWidth;   $('ac-outlineWidthVal').textContent = st.outlineWidth + 'px';
+  $('ac-shadowOn').checked = st.shadowOn;
+  $('ac-shadowControls').style.display = st.shadowOn ? '' : 'none';
+  $('ac-shadowColor').value = st.shadowColor;
+  $('ac-shadowBlur').value = st.shadowBlur;       $('ac-shadowBlurVal').textContent = st.shadowBlur;
+  $('ac-bgOn').checked = st.bgOn;
+  $('ac-bgControls').style.display = st.bgOn ? '' : 'none';
+  $('ac-bgColor').value = st.bgColor;
+  $('ac-bgAlpha').value = Math.round(st.bgAlpha * 100); $('ac-bgAlphaVal').textContent = Math.round(st.bgAlpha * 100) + '%';
+  $('ac-bgPad').value = st.bgPad;                 $('ac-bgPadVal').textContent = st.bgPad + 'px';
+  $('ac-bgRadius').value = st.bgRadius;           $('ac-bgRadiusVal').textContent = st.bgRadius + 'px';
+  $('ac-posY').value = st.posY;                   $('ac-posYVal').textContent = st.posY + '%';
+}
+
+function applyPreset(name) {
+  Object.assign(animStyle, STYLE_PRESETS[name]);
+  syncStyleControls();
+  document.querySelectorAll('.preset-chip').forEach(c =>
+    c.classList.toggle('on', c.dataset.preset === name));
+}
+
 // ── Card builder ──────────────────────────────────────────────────────────────
 let _animCardWired = false;
 function buildAnimCard() {
@@ -2307,6 +2586,11 @@ function buildAnimCard() {
   });
 
   // ── Style tab wiring ──────────────────────────────────────────────────────
+
+  // Presets
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', () => applyPreset(chip.dataset.preset));
+  });
 
   // Font family
   const fontSel = document.getElementById('ac-fontFamily');
